@@ -1,0 +1,132 @@
+@font-face {
+  font-family: 'Patria';
+  src: url('../../../assets/fonts/Patria_Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Patria';
+  src: url('../../../assets/fonts/Patria_Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('../../../assets/fonts/NotoSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('../../../assets/fonts/NotoSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
+
+$pantone-627c: #002f2a;  
+$pantone-626c: #1e5b4f; 
+$pantone-7420c: #9b2247; 
+$pantone-7421c: #611232; 
+$pantone-1255c: #a57f2c; 
+$pantone-7402c: #e6d194; 
+
+.font-patria {
+  font-family: 'Patria', Georgia, serif !important;
+}
+
+.font-noto {
+  font-family: 'Noto Sans', Arial, sans-serif !important;
+}
+
+:host {
+  font-family: 'Noto Sans', Arial, sans-serif;
+}
+
+.login-card {
+  max-width: 1040px; 
+  width: 100%;
+  border-radius: 5px;
+  background-color: $pantone-627c;
+  overflow: hidden;
+}
+
+.brand-sidebar {
+  background-color: $pantone-627c;
+  background-image: url('../../../assets/img/verde.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: #ffffff;
+
+  .text-gold {
+    color: $pantone-1255c !important;
+  }
+
+  .text-gold-light {
+    color: $pantone-7402c !important;
+  }
+
+  .border-gold {
+    border-color: $pantone-1255c !important;
+  }
+}
+
+.form-panel {
+  background-color: #ffffff;
+  background-image: url('../../../assets/img/blanco.svg');
+  background-size: 260% 260% !important; 
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 40rem;
+}
+
+.text-guinda {
+  color: $pantone-7420c !important;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: $pantone-7421c !important;
+  }
+}
+
+.btn-guinda {
+  background-color: $pantone-7420c !important;
+  border-color: $pantone-7420c !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease-in-out;
+
+  &:hover, &:focus, &:active {
+    background-color: $pantone-7421c !important;
+    border-color: $pantone-7421c !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(155, 34, 71, 0.3) !important;
+  }
+}
+
+.form-control {
+  font-family: 'Noto Sans', sans-serif;
+  
+  &:focus {
+    border-color: $pantone-7420c !important;
+    box-shadow: 0 0 0 0.25rem rgba(155, 34, 71, 0.2) !important;
+  }
+}
+
+.brand-footer-bar {
+  height: 12px;
+  background-color: $pantone-627c;
+}
+
+.img-log{
+  background-image: url('../../../assets/img/gbm.png');
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
+}
+
+
+.login-wrapper {
+  background-color: #f4f6f9;
+  border-top: 5px solid $pantone-7420c;
+}

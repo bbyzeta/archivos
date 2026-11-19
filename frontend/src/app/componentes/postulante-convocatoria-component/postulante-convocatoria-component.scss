@@ -1,0 +1,352 @@
+
+@font-face {
+  font-family: 'Patria';
+  src: url('../../../assets/fonts/Patria_Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Patria';
+  src: url('../../../assets/fonts/Patria_Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('../../../assets/fonts/NotoSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('../../../assets/fonts/NotoSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+
+$pantone-627c:  #002f2a; 
+$pantone-626c:  #1e5b4f; 
+$pantone-7420c: #9b2247; 
+$pantone-7421c: #611232; 
+$pantone-1255c: #DCAB68; 
+$pantone-7402c: #e6d194; 
+$color-fondo:   #F8F9FA;
+
+$color-verde:       $pantone-626c;
+$color-verde-hover: $pantone-627c;
+$color-dorado:      $pantone-1255c;
+$color-dorado-hover: darken($pantone-1255c, 8%);
+$color-guinda:      $pantone-7420c;
+
+
+.font-patria {
+  font-family: 'Patria', serif, -apple-system, sans-serif !important;
+  letter-spacing: 0.02em;
+}
+
+.font-noto {
+  font-family: 'Noto Sans', sans-serif !important;
+}
+
+.portal-container {
+  background-color: $color-fondo;
+  font-family: 'Noto Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+.navbar-institucional {
+  background-color: $pantone-627c;
+  border-bottom: 3.5px solid $pantone-1255c;
+
+  .navbar-brand {
+    letter-spacing: 0.03em;
+  }
+}
+
+.badge-rol-postulante {
+  background-color: $pantone-1255c;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.avatar-user {
+  width: 36px;
+  height: 36px;
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+
+.badge-vigente {
+  background-color: #e8f5e9;
+  color: $pantone-627c;
+  border: 1px solid #c8e6c9;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.badge-proxima {
+  background-color: #fff8e1;
+  color: #92400e;
+  border: 1px solid $pantone-7402c;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.badge-cerrada {
+  background-color: #ffebee;
+  color: $pantone-7420c;
+  border: 1px solid #ffcdd2;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.badge-obligatorio {
+  background-color: #fee2e2;
+  color: $pantone-7420c;
+  border: 1px solid #fecaca;
+  font-weight: 700;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+.badge-anexo {
+  background-color: rgba($pantone-7402c, 0.35);
+  color: darken($pantone-1255c, 10%);
+  border: 1px solid $pantone-1255c;
+  font-weight: 700;
+  font-family: 'Noto Sans', sans-serif;
+}
+
+
+.text-verde {
+  color: $pantone-626c !important;
+}
+
+.text-dorado {
+  color: $pantone-1255c !important;
+}
+
+.text-guinda {
+  color: $pantone-7420c !important;
+}
+
+.bg-verde {
+  background-color: $pantone-626c !important;
+}
+
+.border-dorado {
+  border-bottom: 3px solid $pantone-1255c !important;
+}
+
+.btn-verde {
+  background-color: $pantone-626c;
+  color: #ffffff;
+  border: none;
+  font-family: 'Noto Sans', sans-serif;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: $pantone-627c;
+    color: $pantone-7402c;
+  }
+}
+
+.btn-dorado {
+  background-color: $pantone-1255c;
+  color: #ffffff;
+  border: none;
+  font-family: 'Noto Sans', sans-serif;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: $color-dorado-hover;
+    color: #ffffff;
+  }
+}
+
+.btn-outline-verde {
+  border: 1.5px solid $pantone-626c;
+  color: $pantone-626c;
+  background: transparent;
+  font-family: 'Noto Sans', sans-serif;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: $pantone-626c;
+    color: #ffffff;
+  }
+}
+
+.icon-trofeo {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background-color: rgba(165, 127, 44, 0.15);
+}
+
+
+.badge-estado-borrador {
+  background-color: rgba($pantone-7402c, 0.28) !important;
+  color: darken($pantone-1255c, 8%) !important;
+  border: 1px solid $pantone-1255c;
+  font-weight: 700;
+}
+
+.badge-estado-enviado {
+  background-color: $pantone-626c !important;
+  color: #ffffff !important;
+  border: 1px solid lighten($pantone-626c, 10%);
+  font-weight: 700;
+
+  i {
+    color: $pantone-7402c;
+  }
+}
+
+.badge-estado-observaciones {
+  background-color: #fdf2f4 !important;
+  color: $pantone-7421c !important;
+  border: 1px solid $pantone-7420c;
+  font-weight: 700;
+
+  i {
+    color: $pantone-7420c;
+  }
+}
+
+.badge-estado-rechazado {
+  background-color: $pantone-7421c !important;
+  color: #ffffff !important;
+  border: 1px solid darken($pantone-7421c, 5%);
+  font-weight: 700;
+}
+
+.badge-estado-aceptado {
+  background-color: $pantone-627c !important;
+  color: #ffffff !important;
+  border: 1px solid $pantone-1255c;
+  font-weight: 700;
+
+  i {
+    color: $pantone-7402c;
+  }
+}
+
+.text-dorado-subtitulo {
+  color: $pantone-7402c !important;
+}
+
+.badge-periodo-tag {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  font-family: 'Noto Sans', monospace;
+  font-weight: 600;
+}
+
+.badge-vigente {
+  background-color: #e8f5e9 !important;
+  color: $pantone-627c !important;
+  border: 1px solid #a5d6a7 !important;
+}
+
+.badge-proxima {
+  background-color: #fff8e1 !important;
+  color: #92400e !important;
+  border: 1px solid $pantone-7402c !important;
+}
+
+.badge-cerrada {
+  background-color: #ffebee !important;
+  color: $pantone-7420c !important;
+  border: 1px solid #ffcdd2 !important;
+}
+
+.badge-estado-enviado {
+  background-color: #ffffff !important;
+  color: $pantone-627c !important;
+  border: 1.5px solid $pantone-1255c !important;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+
+  i {
+    color: $pantone-626c;
+  }
+}
+
+.badge-estado-borrador {
+  background-color: #fff9e6 !important;
+  color: darken($pantone-1255c, 10%) !important;
+  border: 1.5px solid $pantone-1255c !important;
+  font-weight: 800;
+}
+
+.card-cabecera-verde {
+  background-color: #10312B !important;
+  background: linear-gradient(135deg, #10312B 0%, #1e5b4f 100%) !important;
+  border-top: 4px solid $color-dorado !important;
+
+  .card-body {
+    background: transparent !important;
+  }
+}
+
+.text-dorado-subtitulo {
+  color: lighten($color-dorado, 20%) !important;
+  line-height: 1.5;
+}
+
+.text-dorado-acento {
+  color: lighten($color-dorado, 20%) !important;
+}
+
+.badge-periodo-tag {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  font-weight: 600;
+}
+
+.badge-vigente {
+  background-color: #e8f5e9 !important;
+  color: $color-verde !important;
+  border: 1px solid #a5d6a7 !important;
+}
+
+.badge-proxima {
+  background-color: #fff8e1 !important;
+  color: #92400e !important;
+  border: 1px solid lighten($color-dorado, 20%) !important;
+}
+
+.badge-cerrada {
+  background-color: #ffebee !important;
+  color: $color-guinda !important;
+  border: 1px solid #ffcdd2 !important;
+}
+
+.btn-dorado {
+  background-color: $color-dorado !important;
+  color: #ffffff !important;
+  border: none !important;
+  transition: all 0.2s ease-in-out;
+
+  &:hover {
+    background-color: $color-dorado-hover !important;
+    color: #ffffff !important;
+    transform: translateY(-1px);
+  }
+}
+
+.caja-fechas-verde {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px;
+}

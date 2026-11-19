@@ -1,0 +1,149 @@
+$color-verde: #184B35;
+$color-dorado: #D6BA76;
+$color-guinda: #8E1F41;
+
+.text-verde { color: $color-verde !important; }
+.text-dorado { color: $color-dorado !important; }
+.text-guinda { color: $color-guinda !important; }
+
+.bg-verde { background-color: $color-verde !important; }
+.bg-dorado { background-color: $color-dorado !important; }
+.bg-guinda { background-color: $color-guinda !important; }
+
+.border-dorado { border-color: $color-dorado !important; }
+
+.btn-verde {
+  background-color: $color-verde;
+  color: #ffffff;
+  border: 1px solid $color-verde;
+  &:hover {
+    background-color: darken($color-verde, 5%);
+    color: $color-dorado;
+    border-color: darken($color-verde, 5%);
+  }
+}
+
+.btn-dorado {
+  background-color: $color-dorado;
+  color: #212529;
+  border: 1px solid $color-dorado;
+  font-weight: 600;
+  &:hover {
+    background-color: darken($color-dorado, 8%);
+    color: #000;
+  }
+}
+
+.btn-guinda {
+  background-color: $color-guinda;
+  color: #ffffff;
+  border: 1px solid $color-guinda;
+  &:hover {
+    background-color: darken($color-guinda, 6%);
+    color: #ffffff;
+  }
+}
+
+.btn-action-detail {
+  background-color: #f8f9fa;
+  color: $color-verde;
+  border: 1px solid #dee2e6;
+  &:hover {
+    background-color: $color-verde;
+    color: #ffffff;
+  }
+}
+
+.btn-action-edit {
+  background-color: #f8f9fa;
+  color: darken($color-dorado, 20%);
+  border: 1px solid #dee2e6;
+  &:hover {
+    background-color: $color-dorado;
+    color: #000000;
+  }
+}
+
+.btn-action-delete {
+  background-color: #f8f9fa;
+  color: $color-guinda;
+  border: 1px solid #dee2e6;
+  &:hover {
+    background-color: $color-guinda;
+    color: #ffffff;
+  }
+}
+
+.badge-vigente {
+  background-color: $color-verde;
+  color: #ffffff;
+}
+
+.badge-programada {
+  background-color: $color-dorado;
+  color: #212529;
+}
+
+.badge-cerrada {
+  background-color: $color-guinda;
+  color: #ffffff;
+}
+
+.badge-inactiva {
+  background-color: #6c757d;
+  color: #ffffff;
+}
+
+.badge-requisitos {
+  background-color: rgba($color-verde, 0.1);
+  color: $color-verde;
+  border: 1px solid rgba($color-verde, 0.2);
+}
+
+.badge-anexo {
+  background-color: rgba($color-dorado, 0.3);
+  color: darken($color-dorado, 25%);
+  border: 1px solid $color-dorado;
+}
+
+.badge-obligatorio {
+  background-color: rgba($color-verde, 0.15);
+  color: $color-verde;
+}
+
+.table-header-institucional {
+  background-color: $color-verde;
+  border-bottom: 2px solid $color-dorado;
+}
+
+.switch-institucional:checked {
+  background-color: $color-verde;
+  border-color: $color-verde;
+}
+
+.pagination {
+  .page-link {
+    color: $color-verde;
+    border-color: #dee2e6;
+    &:hover {
+      background-color: rgba($color-dorado, 0.2);
+      color: $color-verde;
+    }
+  }
+  .page-item.active .page-link {
+    background-color: $color-verde;
+    border-color: $color-verde;
+    color: $color-dorado;
+    font-weight: bold;
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 10;
+}

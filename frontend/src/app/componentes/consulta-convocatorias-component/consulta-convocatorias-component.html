@@ -1,0 +1,500 @@
+
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 border-bottom pb-3 mb-4">
+        <div>
+            <h4 class="font-patria fw-bold text-verde mb-1">
+                <i class="bi bi-journal-text me-2"></i>Consulta de Convocatorias
+            </h4>
+            <p class="text-muted small font-noto mb-0">
+                Consulta y gestiona las convocatorias configuradas en el sistema.
+            </p>
+        </div>
+        <div>
+            <button class="btn btn-verde font-noto fw-bold d-flex align-items-center gap-2 shadow-sm"
+                (click)="onCrearNueva.emit()">
+                <i class="bi bi-plus-circle-fill text-dorado"></i>
+                <span>Nueva Convocatoria</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4 font-noto">
+        <div class="col-md-8 col-lg-6">
+            <div class="input-group">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                    <i class="bi bi-search"></i>
+                </span>
+                <input type="text" class="form-control border-start-0 ps-0"
+                    placeholder="Buscar por título de convocatoria..."
+                    [ngModel]="terminoBusqueda()"
+                    (ngModelChange)="terminoBusqueda.set($event)"
+                    (keyup.enter)="buscar()">
+                @if (terminoBusqueda()) {
+                    <button class="btn btn-outline-secondary border" (click)="limpiarBusqueda()">
+                        <i class="bi bi-x"></i>
+                    </button>
+                }
+                <button class="btn btn-dorado font-noto" (click)="buscar()">Buscar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive rounded border font-noto position-relative">
+        @if (cargando()) {
+            <div class="loading-overlay d-flex justify-content-center align-items-center">
+                <div class="spinner-border text-verde" role="status"></div>
+            </div>
+        }
+
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-header-institucional text-white small">
+                <tr>
+                    <th scope="col" class="py-3 ps-3">Título de la Convocatoria</th>
+                    <th scope="col" class="py-3">Vigencia (Apertura - Cierre)</th>
+                    <th scope="col" class="py-3 text-center">Docs Requeridos</th>
+                    <th scope="col" class="py-3 text-center">Estado</th>
+                    <th scope="col" class="py-3 text-center">Periodo</th>
+                    <th scope="col" class="py-3 text-center">Activa</th>
+                    <th scope="col" class="py-3 text-end pe-3">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (item of convocatorias(); track item.id) {
+                    <tr>
+                        <td class="ps-3">
+                            <div class="fw-bold text-dark text-truncate" style="max-width: 320px;" [title]="item.titulo">
+                                {{ item.titulo }}
+                            </div>
+                            @if (item.subtitulo) {
+                                <div class="text-muted small text-truncate" style="max-width: 320px;">
+                                    {{ item.subtitulo }}
+                                </div>
+                            }
+                        </td>
+
+                        <td>
+                            <div class="small text-dark">
+                                <i class="bi bi-calendar-check me-1 text-verde"></i>
+                                {{ item.fechaApertura | date:'dd/MM/yyyy HH:mm' }}
+                            </div>
+                            <div class="small text-muted">
+                                <i class="bi bi-calendar-x me-1 text-guinda"></i>
+                                {{ item.fechaCierre | date:'dd/MM/yyyy HH:mm' }}
+                            </div>
+                        </td>
+
+                        <td class="text-center">
+                            <span class="badge badge-requisitos">
+                                <i class="bi bi-folder me-1"></i>{{ item.requisitos.length }} req.
+                            </span>
+                        </td>
+
+                        <td class="text-center">
+                            @let est = obtenerEstado(item.fechaApertura, item.fechaCierre, item.activa);
+                            <span class="badge {{ est.badgeClass }} px-2 py-1">
+                                {{ est.texto }}
+                            </span>
+                        </td>
+                        
+                        <td class="text-center">
+                         
+                            <span class="px-2 py-1">
+                                {{ item.periodo }}
+                            </span>
+                        </td>
+
+                        <td class="text-center">
+                            <div class="form-check form-switch d-inline-block">
+                                <input class="form-check-input switch-institucional" type="checkbox" role="switch"
+                                    [checked]="item.activa"
+                                    (change)="toggleActiva(item)"
+                                    [title]="item.activa ? 'Convocatoria pública activa' : 'Convocatoria inactiva'">
+                            </div>
+                        </td>
+
+                        <td class="text-end pe-3">
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-action-detail" (click)="abrirDetalle(item)" title="Ver Configuración">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                                <button type="button" class="btn btn-action-edit" (click)="editar(item)" title="Editar">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </button>
+                                <button type="button" class="btn btn-action-delete" (click)="prepararEliminar(item)" title="Eliminar">
+                                    <i class="bi bi-trash3-fill"></i>
+                                </button>
+                                <button type="button" class="btn btn-action-detail" (click)="abrirAsignacionJurados(item)" title="Asignar Jurados">
+                                    <i class="bi bi-people-fill "></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                } @empty {
+                    @if (!cargando()) {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-folder-x fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                                <h6 class="fw-semibold mb-1">No hay convocatorias registradas</h6>
+                                <p class="small mb-3">No se encontraron resultados en la base de datos.</p>
+                                <button class="btn btn-sm btn-verde" (click)="onCrearNueva.emit()">
+                                    <i class="bi bi-plus-circle me-1 text-dorado"></i>Crear Convocatoria
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-4 font-noto">
+        <span class="small text-muted">
+            Página <strong>{{ paginaActual() + 1 }}</strong> de <strong>{{ totalPaginas() || 1 }}</strong> (Total: {{ totalElementos() }} registros)
+        </span>
+
+        @if (totalPaginas() > 1) {
+            <nav aria-label="Navegación">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item" [class.disabled]="paginaActual() === 0">
+                        <button class="page-link" (click)="cambiarPagina(paginaActual() - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                    </li>
+
+                    @for (pag of obtenerArregloPaginas(); track pag) {
+                        <li class="page-item" [class.active]="pag === paginaActual()">
+                            <button class="page-link" (click)="cambiarPagina(pag)">{{ pag + 1 }}</button>
+                        </li>
+                    }
+
+                    <li class="page-item" [class.disabled]="paginaActual() === totalPaginas() - 1">
+                        <button class="page-link" (click)="cambiarPagina(paginaActual() + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        }
+    </div>
+
+
+
+<div class="modal fade" id="modalDetalleConfig" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        @if (convocatoriaSeleccionada(); as sel) {
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-verde text-white border-bottom border-dorado">
+                    <h5 class="modal-title font-patria fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-trophy-fill text-dorado"></i>
+                        Detalle y Configuración de Convocatoria
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 font-noto">
+
+                    
+
+                    <div class="mb-4">
+                        @let est = obtenerEstado(sel.fechaApertura, sel.fechaCierre, sel.activa);
+                        <span class="badge {{ est.badgeClass }} mb-2">{{ est.texto }}</span>  
+                        <h3 class="fw-bold text-dark mb-1">{{ sel.titulo }}</h3>                      
+                    </div>
+
+                    <div class="row g-3 p-3 bg-light rounded mb-4 mt-2 border">
+                        <div class="col-sm-6">
+                            <small class="text-muted d-block">Fecha y Hora de Apertura:</small>
+                            <strong class="text-dark"><i class="bi bi-calendar-check text-verde me-1"></i>{{ sel.fechaApertura | date:'dd/MM/yyyy HH:mm' }} hrs</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted d-block">Fecha y Hora de Cierre:</small>
+                            <strong class="text-dark"><i class="bi bi-calendar-x text-guinda me-1"></i>{{ sel.fechaCierre | date:'dd/MM/yyyy HH:mm' }} hrs</strong>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 mt-2">
+                        <h6 class="font-patria fw-bold text-verde border-bottom pb-2 mb-3">
+                            <i class="bi bi-files me-1 text-dorado"></i>Documentos y Anexos Requeridos ({{ sel.requisitos.length }})
+                        </h6>
+                        <ul class="list-group list-group-flush border rounded">
+                            @for (req of sel.requisitos; track $index) {
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-file-earmark-pdf-fill text-guinda fs-5"></i>
+                                        <span class="fw-semibold text-dark">{{ req.nombre }}</span>
+                                    </div>
+                                    @if (req.esAnexo) {
+                                        <span class="badge badge-anexo">Anexo</span>
+                                    } @else {
+                                        <span class="badge badge-obligatorio">Obligatorio</span>
+                                    }
+                                </li>
+                            } @empty {
+                                <li class="list-group-item text-muted small">No se configuraron requisitos para este certamen.</li>
+                            }
+                        </ul>
+                    </div>
+
+                    
+
+                    <div class="mb-3">                        
+                        @if (sel.tituloBlog) {
+                            <h5 class=" text-muted fw-normal mb-2">Título de la publicación: <strong>{{ sel.tituloBlog }}</strong></h5>
+                        }
+                        @if (sel.subtitulo) {
+                            <h6 class="text-muted fw-normal">{{ sel.subtitulo }}</h6>
+                        }
+                    </div>
+                    
+                        @if (sel.rutaImagenHeader) {
+                            <div class="mb-4 rounded overflow-hidden shadow-sm border position-relative d-flex align-items-center justify-content-center"
+                                style="height: 280px; width: 100%; background-color: #184B35;">
+                                
+                                <img [src]="obtenerUrlImagen(sel.rutaImagenHeader)" 
+                                    alt="Fondo" 
+                                    class="position-absolute top-0 start-0 w-100 h-100" 
+                                    style="object-fit: cover; filter: blur(12px) brightness(0.6); transform: scale(1.1);">
+
+                                <img [src]="obtenerUrlImagen(sel.rutaImagenHeader)" 
+                                    alt="Banner de Convocatoria" 
+                                    class="position-relative h-100 w-100" 
+                                    style="object-fit: contain; z-index: 1;"
+                                    (error)="$any($event.target).style.display = 'none'">
+                            </div>
+                        }
+
+
+
+                    <div class="mb-4">
+                        <h6 class="font-patria fw-bold text-verde border-bottom pb-2 mb-2">
+                            <i class="bi bi-card-text me-1 text-dorado"></i>Contenido
+                        </h6>
+                        
+                        <div class="bg-light p-3 rounded border small text-secondary" style="white-space: pre-line;">
+                            {{ sel.contenidoBlog || 'Sin descripción redactada.' }}
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                            <h6 class="font-patria fw-bold text-verde mb-0">
+                                <i class="bi bi-file-earmark-pdf-fill me-1 text-guinda"></i>Documento Oficial de Bases
+                            </h6>
+                            @if (sel.rutaPdfBases) {
+                                <a [href]="obtenerUrlDescargaPdf(sel.rutaPdfBases)" target="_blank" download class="btn btn-outline-secondary btn-sm font-noto">
+                                    <i class="bi bi-download me-1"></i>Descargar PDF
+                                </a>
+                            }
+                        </div>
+
+                        @if (sel.rutaPdfBases) {
+                            <div class="border rounded overflow-hidden shadow-sm bg-secondary bg-opacity-10">
+                                <iframe [src]="obtenerUrlSeguraPdf(sel.rutaPdfBases)" 
+                                        class="w-100" 
+                                        style="height: 480px; border: none;"
+                                        title="Visor PDF de Bases">
+                                </iframe>
+                            </div>
+                        } @else {
+                            <div class="alert alert-light border text-muted small">
+                                <i class="bi bi-info-circle me-1"></i>No hay documento PDF de bases adjunto.
+                            </div>
+                        }
+                    </div>
+
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                            <h6 class="font-patria fw-bold text-verde mb-0">
+                                <i class="bi bi-award-fill me-1 text-dorado"></i>Comité Dictaminador y Jurados Acreditados
+                                @if (juradosDetalleConvocatoria().length > 0) {
+                                    <span class="badge bg-light text-verde border ms-2">
+                                        {{ juradosDetalleConvocatoria().length }} asignado(s)
+                                    </span>
+                                }
+                            </h6>
+                            <button type="button" class="btn btn-outline-verde btn-sm font-noto" 
+                                    (click)="abrirAsignacionJuradosDesdeDetalle(sel)" 
+                                    title="Modificar lista de jurados">
+                                <i class="bi bi-person-gear me-1"></i>Gestionar Jurados
+                            </button>
+                        </div>
+
+                        @if (cargandoJuradosDetalle()) {
+                            <div class="d-flex align-items-center justify-content-center py-3 text-muted">
+                                <div class="spinner-border spinner-border-sm text-verde me-2" role="status"></div>
+                                <span class="small">Cargando comité asignado...</span>
+                            </div>
+                        } @else {
+                            <div class="row g-2">
+                                @for (jur of juradosDetalleConvocatoria(); track jur.idJurado) {
+                                    <div class="col-md-6">
+                                        <div class="p-3 border rounded bg-white shadow-sm h-100">
+                                            <div class="d-flex align-items-start justify-content-between mb-1">
+                                                <div class="text-truncate me-2">
+                                                    <span class="badge bg-light text-verde border me-1">{{ jur.gradoAcademico }}</span>
+                                                    <strong class="text-dark small">{{ jur.nombres }} {{ jur.apellidos }}</strong>
+                                                </div>
+                                                <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.7rem;">
+                                                    {{ jur.areaConocimiento }}
+                                                </span>
+                                            </div>
+
+                                            <div class="small text-muted text-truncate">
+                                                <i class="bi bi-building me-1"></i>{{ jur.institucionAdscripcion }}
+                                            </div>
+
+                                            <div class="small text-secondary text-truncate">
+                                                <i class="bi bi-person-badge me-1"></i>{{ jur.cargoActual }}
+                                            </div>
+
+                                            <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top small">
+                                                <span class="text-muted text-truncate" style="max-width: 200px;">
+                                                    <i class="bi bi-envelope me-1"></i>{{ jur.username }}
+                                                </span>
+                                                @if (jur.orcidUrl) {
+                                                    <a [href]="jur.orcidUrl" target="_blank" class="text-verde text-decoration-none">
+                                                        <i class="bi bi-link-45deg"></i>ORCID
+                                                    </a>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                } @empty {
+                                    <div class="col-12">
+                                        <div class="alert alert-light border text-muted small d-flex align-items-center justify-content-between mb-0">
+                                            <div>
+                                                <i class="bi bi-person-exclamation me-1 text-secondary"></i>
+                                                Aún no se han acreditado jurados evaluadores para esta convocatoria.
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-link text-verde text-decoration-none p-0" 
+                                                    (click)="abrirAsignacionJuradosDesdeDetalle(sel)">
+                                                Asignar ahora
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+
+                    <div class="mb-4">
+                        <h6 class="font-patria fw-bold text-verde border-bottom pb-2 mb-3">
+                            <i class="bi bi-award-fill me-1 text-dorado"></i>Ganadores de Ediciones Anteriores
+                        </h6>
+                        <div class="row g-2">
+                            @for (gan of sel.ganadoresHistoricos; track $index) {
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="p-2 border rounded bg-white shadow-sm d-flex align-items-center gap-3">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center text-dorado" 
+                                             style="width: 40px; height: 40px; min-width: 40px; background-color: rgba(214, 186, 118, 0.2);">
+                                            <i class="bi bi-patch-check-fill fs-5"></i>
+                                        </div>
+                                        <div class="text-truncate">
+                                            <strong class="d-block text-dark small text-truncate" [title]="gan.nombreGanador">
+                                                {{ gan.nombreGanador }}
+                                            </strong>
+                                            <span class="badge bg-light text-dark border" style="font-size: 0.75rem;">
+                                                Año: {{ gan.anio }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            } @empty {
+                                <div class="col-12">
+                                    <span class="text-muted small">No se registraron ganadores de emisiones pasadas.</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light font-noto">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-verde fw-bold" data-bs-dismiss="modal" (click)="editar(sel)">
+                        <i class="bi bi-pencil-square me-1 text-dorado"></i>Editar Convocatoria
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalAsignarJurados" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-verde text-white border-bottom border-dorado">
+                <div>
+                    <h5 class="modal-title font-patria fw-bold d-flex align-items-center gap-2">
+                        <i class="bi bi-award-fill text-dorado"></i>Jurados
+                    </h5>
+                    <small class="text-secondary font-noto">
+                        Convocatoria: <strong>{{ convocatoriaSeleccionadaParaJurados()?.titulo }}</strong>
+                    </small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4 font-noto">
+                <div class="row g-2 mb-3">
+                    <div class="col-12">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0 text-muted">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0"
+                                placeholder="Filtrar por nombre, institución o área..."
+                                [ngModel]="filtroJuradosModal()"
+                                (ngModelChange)="filtroJuradosModal.set($event)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small text-muted">
+                        Seleccionados: <strong>{{ juradosSeleccionadosIds().size }}</strong> jurado(s)
+                    </span>
+                    <span class="badge bg-light text-dark border">Total Jurados: {{ juradosDisponibles().length }}</span>
+                </div>
+
+                <div class="list-group list-group-flush border rounded overflow-auto" style="max-height: 400px;">
+                    @for (jur of juradosFiltrados(); track jur.idJurado) {
+                        <label class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3" style="cursor: pointer;">
+                            <input class="form-check-input switch-institucional m-0" 
+                                   type="checkbox" 
+                                   [checked]="estaJuradoSeleccionado(jur.idJurado)"
+                                   (change)="toggleSeleccionJurado(jur.idJurado)">
+
+                            <div class="flex-grow-1 text-truncate">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-light text-verde border">{{ jur.gradoAcademico }}</span>
+                                    <strong class="text-dark">{{ jur.nombres }} {{ jur.apellidos }}</strong>
+                                </div>
+                                <div class="small text-muted text-truncate mt-1">
+                                    <i class="bi bi-building me-1"></i>{{ jur.institucionAdscripcion }} &bull; {{ jur.cargoActual }}
+                                </div>
+                                <div class="small text-secondary mt-1">
+                                    <span class="badge bg-light text-dark border">{{ jur.areaConocimiento }}</span>
+                                    <span class="ms-2"><i class="bi bi-envelope me-1"></i>{{ jur.username }}</span>
+                                </div>
+                            </div>
+                        </label>
+                    } @empty {
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-person-exclamation fs-3 d-block mb-1 opacity-50"></i>
+                            No se encontraron jurados activos que coincidan con la búsqueda.
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light font-noto">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-verde fw-bold" (click)="guardarAsignacionJurados()">
+                    <i class="bi bi-save me-1 text-dorado"></i>Guardar Asignación
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

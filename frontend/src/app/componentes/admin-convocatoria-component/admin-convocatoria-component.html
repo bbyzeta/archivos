@@ -1,0 +1,365 @@
+<div class="d-flex min-vh-100 bg-light">
+
+
+    <aside class="brand-sidebar text-white p-3 d-flex flex-column flex-shrink-0"
+        style="width: 280px; min-height: 100vh;">
+
+        <div class="text-center my-3">
+            <img src="assets/img/logsalud.png" alt="Logo Salud" width="140" class="img-fluid mb-2">
+            <h6 class="font-patria fw-bold text-white mb-0">Panel de Administración</h6>
+            <small class="text-warning font-noto">Convocatorias {{anioActual}}</small>
+        </div>
+
+        <hr class="border-gold opacity-50 my-3">
+
+        <ul class="nav nav-pills flex-column mb-0 font-noto">
+            <li class="nav-item mb-2">
+                <button class="nav-link w-100 text-start text-white text-nowrap d-flex align-items-center"
+                    [class.active-link]="opcionSidebar === 'nueva'" (click)="cambiarOpcionMenu('nueva')">
+                    <i class="bi bi-journal-bookmark me-2 fs-5"></i>Nueva Convocatoria
+                </button>
+            </li>
+            <li class="nav-item mb-2">
+                <button class="nav-link w-100 text-start text-white text-nowrap d-flex align-items-center"
+                    [class.active-link]="opcionSidebar === 'consulta'" (click)="cambiarOpcionMenu('consulta')">
+                    <i class="bi bi-journal-text me-2 fs-5"></i>Consulta de Convocatorias
+                </button>
+            </li>
+            <li class="nav-item mb-2">
+                <button class="nav-link w-100 text-start text-white text-nowrap d-flex align-items-center"
+                    [class.active-link]="opcionSidebar === 'usuarios'" (click)="cambiarOpcionMenu('usuarios')">
+                    <i class="bi bi-person-vcard me-2 fs-5"></i>Consulta de Participantes
+                </button>
+            </li>
+            <li class="nav-item mb-2">
+                <button class="nav-link w-100 text-start text-white text-nowrap d-flex align-items-center"
+                    [class.active-link]="opcionSidebar === 'jurado'" (click)="cambiarOpcionMenu('jurado')">
+                    <i class="bi-person-workspace me-2 fs-5"></i>Consulta de Jurados
+                </button>
+            </li>
+            <li class="nav-item mb-2">
+                <button class="nav-link w-100 text-start text-white text-nowrap d-flex align-items-center"
+                    [class.active-link]="opcionSidebar === 'evaluacion'" (click)="cambiarOpcionMenu('evaluacion')">
+                    <i class="bi-ui-checks me-2 fs-5"></i>Resultados de Evaluación
+                </button>
+            </li>
+        </ul>
+    </aside>
+
+
+    <main class="flex-grow-1 d-flex flex-column min-vh-100" style="min-width: 0;">
+
+        <header
+            class="navbar navbar-expand px-4 py-2 text-white shadow-sm d-flex justify-content-between align-items-center flex-shrink-0"
+            style="background-color: #13322B; border-bottom: 2px solid #D6BA76;">
+
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-award text-warning fs-5"></i>
+                <span class="font-patria fw-bold text-white fs-6 mb-0 d-none d-sm-inline">
+                    Sistema de Convocatorias y Premios
+                </span>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 font-noto">
+
+                <div class="d-flex align-items-center gap-2 text-end">
+                    <div class="d-none d-md-block" style="line-height: 1.2;">
+                        <div class="fw-semibold text-white small text-truncate" style="max-width: 220px;"
+                            [title]="usuario">
+                            {{usuario || 'Administrador'}}
+                        </div>
+                        <span class="badge text-dark fw-bold" style="background-color: #D6BA76; font-size: 0.7rem;">
+                            {{rol || 'ROLE_ADMIN'}}
+                        </span>
+                    </div>
+
+                    <div class="rounded-circle d-flex align-items-center justify-content-center border"
+                        style="width: 38px; height: 38px; min-width: 38px; background-color: rgba(255,255,255,0.15);">
+                        <i class="bi bi-person-fill  fs-5"></i>
+                    </div>
+                </div>
+
+                <div class="vr bg-white opacity-25" style="height: 28px;"></div>
+
+                <button class="btn btn-sm btn-outline-light d-flex align-items-center gap-1 py-1 px-2"
+                    (click)="logout()" title="Cerrar sesión">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span class="d-none d-sm-inline">Salir</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="p-4 flex-grow-1 overflow-y-auto">
+
+            <div *ngIf="opcionSidebar === 'nueva'" class="card border-0 shadow-sm p-4">
+
+                <div>
+                    <h4 class="font-patria fw-bold text-verde mb-1 ">
+                        <i class="bi bi-pencil-square me-2"></i>Crear Nueva Convocatoria
+                    </h4>
+                    <p class="text-muted small font-noto mb-4 border-bottom pb-2">
+                        Generá nueva convocatorias en el sistema.
+                    </p>
+                </div>
+
+
+                <form [formGroup]="convocatoriaForm" (ngSubmit)="onSubmit()">
+
+                    <div class="row g-3 mb-4">
+
+                        <div class="col-md-4">
+                            <label class="form-label font-noto small fw-semibold">Grupo del Premio <span class="text-danger">*</span></label>
+                            <select class="form-select" 
+                                    [class.is-invalid]="esCampoInvalido('areaGrupoPremio')" 
+                                    formControlName="areaGrupoPremio">
+                                <option value="" disabled>Seleccione grupo</option>
+                                <option value="1">Convocatoria Día Mundial de la Salud</option>
+                                <option value="2">Convocatoria Enfermería</option>
+                                <option value="3">Convocatoría Día del Médico</option>
+                              
+                            </select>
+                            <div class="invalid-feedback">Selecciona un grupo de Premio.</div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label font-noto small fw-semibold">Nombre del Premio <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control"
+                                [ngClass]="{'is-invalid': esCampoInvalido('titulo')}" formControlName="titulo"
+                                placeholder="Ej. Premio a la Innovación Científica">
+                            <div class="invalid-feedback">El título es obligatorio.</div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label class="form-label font-noto small fw-semibold">Fecha y Hora de Apertura <span
+                                    class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control"
+                                [ngClass]="{'is-invalid': esCampoInvalido('fechaApertura')}"
+                                formControlName="fechaApertura">
+                            <div class="invalid-feedback">Selecciona la fecha de apertura.</div>
+                        </div>
+
+                        <div class="col-md-5">
+                            <label class="form-label font-noto small fw-semibold">Fecha y Hora de Cierre <span
+                                    class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control"
+                                [ngClass]="{'is-invalid': esCampoInvalido('fechaCierre')}"
+                                formControlName="fechaCierre">
+                            <div class="invalid-feedback">Selecciona la fecha de cierre.</div>
+                        </div>
+
+                        <div class="col-md-2 d-flex flex-column justify-content-center">
+                            <label class="form-label font-noto small fw-semibold d-block">Estado Inicial</label>
+                            <div class="form-check form-switch mt-1">
+                                <input class="form-check-input" type="checkbox" formControlName="activa"
+                                    id="switchActiva">
+                                <label class="form-check-label font-noto fw-bold text-nowrap"
+                                    [class.text-success]="convocatoriaForm.get('activa')?.value"
+                                    [class.text-muted]="!convocatoriaForm.get('activa')?.value" for="switchActiva">
+                                    {{ convocatoriaForm.get('activa')?.value ? 'Activa' : 'Inactiva' }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <div *ngIf="convocatoriaForm.get('activa')?.value" class="col-12">
+                            <div class="alert alert-warning py-2 px-3 small d-flex align-items-center mb-0"
+                                role="alert">
+                                <i class="bi bi-exclamation-triangle-fill text-warning me-2 fs-5 flex-shrink-0"></i>
+                                <span><strong>Nota:</strong> Solo puede existir 1 convocatoria activa a la vez. Si la
+                                    guardas como activa, cualquier otra convocatoria pública cambiará automáticamente a
+                                    estado inactivo.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card p-3 mb-4 bg-light border-0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="font-patria fw-bold text-dark mb-0">
+                                Documentos o Anexos Solicitados ({{ requisitos.length }} Requisitos) <span
+                                    class="text-danger">*</span>
+                            </h6>
+                            <button type="button" class="btn btn-outline-verde btn-sm font-noto"
+                                (click)="agregarRequisito()">
+                                + Agregar Documento
+                            </button>
+                        </div>
+
+                        <div *ngIf="requisitos.length === 0 && convocatoriaForm.touched" class="text-danger small mb-3">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Debes agregar al menos un requisito o
+                            anexo.
+                        </div>
+
+                        <div formArrayName="requisitos">
+
+                            <div class="row g-2 mb-1 fw-bold text-muted small px-1">
+                                <div class="col-md-4">Requisito / Documento</div>
+                                <div class="col-md-2 text-center">% Mínimo</div>
+                                <div class="col-md-2 text-center">% Máximo</div>
+                                <div class="col-md-3 text-center">Tipo</div>
+                                <div class="col-md-1"></div>
+                            </div>
+
+                            <div *ngFor="let req of requisitos.controls; let i = index" [formGroupName]="i"
+                                class="row g-2  mb-2">
+
+                                <div class="col-md-4 ">
+                                    <input type="text" class="form-control form-control-sm"
+                                        [ngClass]="{'is-invalid': req.get('nombre')?.invalid && (req.get('nombre')?.touched || req.get('nombre')?.dirty)}"
+                                        formControlName="nombre" placeholder="Nombre del documento">
+                                    <div class="invalid-feedback">Ingresa el nombre.</div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control text-end"
+                                            [ngClass]="{'is-invalid': req.get('porcentajeMinimo')?.invalid && (req.get('porcentajeMinimo')?.touched || req.get('porcentajeMinimo')?.dirty)}"
+                                            formControlName="porcentajeMinimo" placeholder="0" min="0" max="100"
+                                            step="1" onkeydown="return event.keyCode !== 190 && event.keyCode !== 110">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control text-end"
+                                            [ngClass]="{'is-invalid': req.get('porcentajeMaximo')?.invalid && (req.get('porcentajeMaximo')?.touched || req.get('porcentajeMaximo')?.dirty)}"
+                                            formControlName="porcentajeMaximo" placeholder="100" min="0" max="100"
+                                            step="1" onkeydown="return event.keyCode !== 190 && event.keyCode !== 110">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-3 d-flex  justify-content-center">
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input" type="checkbox" formControlName="esAnexo"
+                                            [id]="'anexoSwitch' + i">
+                                        <label class="form-check-label small font-noto text-nowrap"
+                                            [for]="'anexoSwitch' + i">Es Anexo</label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-1 text-end">
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                        (click)="eliminarRequisito(i)" title="Eliminar elemento">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card p-3 mb-4 bg-light border-0">
+                        <h6 class="font-patria fw-bold text-dark mb-3">Contenido de Publicación</h6>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label font-noto small fw-semibold">Título del Premio <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control"
+                                    [ngClass]="{'is-invalid': esCampoInvalido('tituloBlog')}"
+                                    formControlName="tituloBlog"
+                                    placeholder="Ej. ¡Apertura de registros para la edición 2026!">
+                                <div class="invalid-feedback">El título del blog es obligatorio.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label font-noto small fw-semibold">Subtítulo</label>
+                                <input type="text" class="form-control" formControlName="subtitulo"
+                                    placeholder="Subtítulo llamativo para la vista pública">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label font-noto small fw-semibold">Banner del Premio <span
+                                        class="text-danger">*</span></label>
+                                <input type="file" class="form-control"
+                                    [ngClass]="{'is-invalid': esCampoInvalido('imagenHeader')}"
+                                    accept="image/png, image/jpeg, image/jpg, image/webp"
+                                    (change)="onFileSelected($event)">
+                                <div class="invalid-feedback">Adjunta una imagen para el encabezado.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label font-noto small fw-semibold">
+                                    Documento Oficial de Bases (PDF) <span class="text-danger">*</span>
+                                </label>
+                                <input type="file" class="form-control"
+                                    [ngClass]="{'is-invalid': esCampoInvalido('documentoBases')}"
+                                    accept="application/pdf, .pdf" (change)="onBasesSelected($event)">
+                                <div class="invalid-feedback">Debes adjuntar el archivo oficial de las bases en formato
+                                    PDF.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label font-noto small fw-semibold">Contenido descriptivo de la
+                                Convocatoria
+                                <span class="text-danger">*</span></label>
+                            <textarea class="form-control" [ngClass]="{'is-invalid': esCampoInvalido('contenidoBlog')}"
+                                formControlName="contenidoBlog" rows="6"
+                                placeholder="Escribe aquí el contenido"></textarea>
+                            <div class="invalid-feedback">El contenido del comunicado no puede estar vacío.</div>
+                        </div>
+                    </div>
+
+                    <div class="card p-3 mb-4 bg-light border-0">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="font-patria fw-bold text-dark mb-0">Historial de Ganadores Históricos</h6>
+                            <button type="button" class="btn btn-outline-verde btn-sm font-noto"
+                                (click)="agregarGanador()">
+                                + Agregar Ganador
+                            </button>
+                        </div>
+
+                        <div formArrayName="ganadoresHistoricos">
+                            <div *ngFor="let gan of ganadoresHistoricos.controls; let j = index" [formGroupName]="j"
+                                class="row g-2 align-items-center mb-2">
+                                <div class="col-md-7">
+                                    <input type="text" class="form-control"
+                                        [ngClass]="{'is-invalid': gan.get('nombreGanador')?.invalid && (gan.get('nombreGanador')?.touched || gan.get('nombreGanador')?.dirty)}"
+                                        formControlName="nombreGanador" placeholder="Nombre completo del premiado">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control"
+                                        [ngClass]="{'is-invalid': gan.get('anio')?.invalid && (gan.get('anio')?.touched || gan.get('anio')?.dirty)}"
+                                        formControlName="anio" placeholder="Año (Ej. 2025)">
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                        (click)="eliminarGanador(j)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn btn-verde font-noto px-4 fw-bold">Guardar Convocatoria</button>
+                    </div>
+
+                </form>
+            </div>
+
+            <div *ngIf="opcionSidebar === 'consulta'" class="card border-0 shadow-sm p-4">
+                <app-consulta-convocatorias (onCrearNueva)="limpiarFormulario(); opcionSidebar = 'nueva'"
+                    (onEditarConvocatoria)="cargarEdicion($event)">
+                </app-consulta-convocatorias>
+            </div>
+            <div *ngIf="opcionSidebar === 'usuarios'" class="card border-0 shadow-sm p-4">
+                <app-consulta-participantes-component></app-consulta-participantes-component>
+            </div>
+            <div *ngIf="opcionSidebar === 'jurado'" class="card border-0 shadow-sm p-4">
+                <app-jurados-consulta></app-jurados-consulta>
+            </div>
+            <div *ngIf="opcionSidebar === 'evaluacion'" class="card border-0 shadow-sm p-4">
+                <app-dictamenes-list-component></app-dictamenes-list-component>
+            </div>
+
+        </div>
+
+    </main>
+</div>

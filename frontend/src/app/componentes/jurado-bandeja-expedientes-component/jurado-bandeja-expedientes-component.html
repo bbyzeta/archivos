@@ -1,0 +1,330 @@
+<div class="portal-container min-vh-100 font-noto pb-5">
+  <header class="navbar-institucional px-3 px-md-4 py-2 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-award-fill fs-4 text-dorado"></i>
+      <span class="navbar-brand text-white fw-bold mb-0 fs-6 fs-md-5 font-patria">
+        Sistema de Convocatorias y Premios
+      </span>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+      <div class="d-flex align-items-center gap-2 text-end">
+        <div class="d-none d-sm-block">
+          <span class="d-block text-white fw-bold small text-truncate" style="max-width: 250px;">
+            {{ currentUserEmail() }}
+          </span>
+          <span class="badge badge-rol-auditor">
+            {{ currentUserRole() }}
+          </span>
+        </div>
+        <div class="avatar-user rounded-circle d-flex align-items-center justify-content-center">
+          <i class="bi bi-person-fill fs-5 text-white"></i>
+        </div>
+      </div>
+
+      <div class="vr bg-white opacity-25 d-none d-sm-block" style="height: 28px;"></div>
+
+      <button class="btn btn-outline-light btn-sm d-flex align-items-center gap-2 px-3 py-1 font-noto"
+              (click)="logout()">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="d-none d-sm-inline">Salir</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="container py-4">
+
+    
+    <div class="card border-0 rounded-4 overflow-hidden mb-4 shadow-sm card-cabecera-verde font-noto">
+      <div class="card-body p-4 p-md-5 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
+        
+        <div class="pe-md-3">
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="badge badge-periodo-tag px-3 py-2">
+              <i class="bi bi-shield-lock-fill me-1 text-dorado-acento"></i>Panel de Dictamen
+            </span>
+            <span class="badge bg-white text-dark fw-bold px-3 py-2 shadow-sm">
+              <i class="bi bi-people-fill me-1 text-verde"></i>{{ totalElementos() }} Postulantes Registrados
+            </span>
+          </div>
+
+          <h3 class="font-patria fw-bold text-white mb-2 fs-2">
+            Bandeja de Postulantes y Validación Documental
+          </h3>
+          <p class="text-dorado-subtitulo small mb-0">
+            Revisión de expedientes por el Jurado Dictaminador.
+          </p>
+        </div>
+
+        <div class="flex-shrink-0">
+          <button class="btn btn-dorado fw-bold px-4 py-2 shadow-sm d-flex align-items-center gap-2"
+                  (click)="buscar()">
+            <i class="bi bi-arrow-clockwise"></i>
+            <span>Actualizar Bandeja</span>
+          </button>
+        </div>
+
+      </div>
+
+      <div class="d-inline-flex flex-wrap align-items-center gap-3 py-2 px-3 caja-fechas-verde small text-white"
+           style="margin-left: 3rem; margin-right: 41rem ; margin-bottom: 1rem;">
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-check-fill text-dorado"></i>
+          <span>Criterio: <strong class="text-white">Formatos Oficiales en PDF</strong></span>
+        </div>
+        <span class="opacity-25 d-none d-sm-inline">|</span>
+        <div class="d-flex align-items-center gap-2">
+          <i class="bi bi-info-circle-fill text-dorado"></i>
+          <span>Fase actual: <strong class="text-white">Revisión por el Jurado</strong></span>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden">
+      <div class="card-body p-4 p-lg-5">
+
+        <div class="mb-4">
+          <h6 class="font-patria fw-bold text-verde border-bottom pb-2 mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-funnel-fill text-dorado"></i>Filtros de Búsqueda y Selección
+          </h6>
+
+          <div class="row g-2 align-items-center">
+            
+            <div class="col-md-4">
+              <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0 text-muted">
+                  <i class="bi bi-search"></i>
+                </span>
+                <input type="text" class="form-control border-start-0"
+                       placeholder="Buscar por Folio, Postulante, CURP o Institución..."
+                       [ngModel]="terminoBusqueda()"
+                       (ngModelChange)="terminoBusqueda.set($event)"
+                       (keyup.enter)="buscar()">
+              </div>
+            </div>
+
+            <div class="col-md-3">
+              <select class="form-select form-select-sm"
+                      [ngModel]="convocatoriaFiltroId()"
+                      (ngModelChange)="convocatoriaFiltroId.set($event); buscar()">
+                <option [ngValue]="null">Todas las Convocatorias</option>
+                @for (conv of convocatorias(); track conv.id) {
+                  <option [ngValue]="conv.id">{{ conv.titulo }} ({{ conv.periodo }})</option>
+                }
+              </select>
+            </div>
+
+           
+            <div class="col-md-2 d-flex gap-2">
+              
+              <button class="btn btn-outline-secondary btn-sm" (click)="limpiarFiltros()" title="Limpiar Filtros">
+                <i class="bi bi-eraser"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+     
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+            <h6 class="font-patria fw-bold text-verde mb-0">
+              <i class="bi bi-files me-2 text-dorado"></i>Expedientes para Dictamen ({{ expedientesFiltrados().length }})
+            </h6>
+            <span class="badge bg-light text-muted border font-monospace">Página {{ paginaActual() + 1 }} de {{ totalPaginas() }}</span>
+          </div>
+
+          <div class="table-responsive rounded-3 border bg-white shadow-sm position-relative">
+            
+            @if (cargando()) {
+              <div class="loading-overlay d-flex flex-column justify-content-center align-items-center py-5">
+                <div class="spinner-border text-verde mb-2" role="status"></div>
+                <small class="text-muted fw-semibold">Cargando expedientes de postulantes...</small>
+              </div>
+            }
+
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-header-institucional text-white small">
+                <tr>
+                  <th scope="col" class="py-3 ps-3">Folio / Fecha Formalización</th>
+                  <th scope="col" class="py-3">Postulante</th>
+                  <th scope="col" class="py-3">Convocatoria</th>
+                  <th scope="col" class="py-3 text-center">Revisión Documental</th>
+                  <th scope="col" class="py-3 text-center">Estado del Expediente</th>
+                  <th scope="col" class="py-3 text-center">Estado y Porcentaje de Evaluación</th>
+                  <th scope="col" class="py-3 text-end pe-3">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of expedientesFiltrados(); track item.idExpediente) {
+                  <tr>
+                    
+                    <td class="ps-3">
+                      <strong class="d-block text-verde font-monospace">{{ item.folio }}</strong>
+                      <small class="text-muted" style="font-size: 0.75rem;">
+                        <i class="bi bi-clock-history me-1"></i>
+                        {{ item.fechaEnvio ? (item.fechaEnvio | date:'dd/MM/yyyy HH:mm') + ' hrs' : 'Sin fecha formal' }}
+                      </small>
+                    </td>
+
+                    <td>
+                      <div class="fw-bold text-dark " style="max-width: 250px;" [title]="item.nombrePostulante">
+                        {{ item.nombrePostulante }}
+                      </div>
+                      <div class="small text-muted " style="max-width: 250px;">
+                        <span>{{ item.correoPostulante }}</span> &bull; <span>{{ item.curpPostulante }}</span>
+                      </div>
+                      <div class="small text-secondary text-truncate" style="max-width: 250px; font-size: 0.75rem;">
+                        <i class="bi bi-building me-1"></i>{{ item.institucionPostulante || 'Sin institución adscrita' }}
+                      </div>
+                    </td>
+
+                    <td>
+                      <div class="fw-semibold text-dark text-truncate" style="max-width: 260px;" [title]="item.tituloConvocatoria">
+                        {{ item.tituloConvocatoria }}
+                      </div>
+                      <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.7rem;">
+                        Período: {{ item.periodo }}
+                      </span>
+                    </td>
+
+                    <td class="text-center align-middle">
+                      <span 
+                        class="micro-chip"
+                        [class.completo]="item.documentosAprobados === item.totalDocumentos">
+                        <i class="bi" [class.bi-check-lg]="item.documentosAprobados === item.totalDocumentos" [class.bi-files]="item.documentosAprobados < item.totalDocumentos"></i>
+                        <span>{{ item.documentosAprobados }}/{{ item.totalDocumentos }}</span>
+                      </span>
+                    </td>
+
+                    <td class="text-center">
+                      @if (item.estadoExpediente === 'BORRADOR') {
+                        <span class="badge badge-estado-borrador px-3 py-2">
+                          <i class="bi bi-pencil-square me-1"></i>No Postulado
+                        </span>
+                      } @else if (item.estadoExpediente === 'ENVIADO') {
+                        <span class="badge badge-estado-enviado px-3 py-2">
+                          <i class="bi bi-send-check-fill me-1"></i>Postulado
+                        </span>
+                      } @else if (item.estadoExpediente === 'CON_OBSERVACIONES') {
+                        <span class="badge badge-estado-observaciones px-3 py-2">
+                          <i class="bi bi-exclamation-triangle-fill me-1"></i>Con Observaciones
+                        </span>
+                      } @else if (item.estadoExpediente === 'RECHAZADO') {
+                        <span class="badge badge-estado-rechazado px-3 py-2">
+                          <i class="bi bi-x-circle-fill me-1"></i>Rechazo Definitivo
+                        </span>
+                      } @else if (item.estadoExpediente === 'ACEPTADO') {
+                        <span class="badge badge-estado-aceptado px-3 py-2">
+                          <i class="bi bi-patch-check-fill me-1"></i>Expediente Aprobado
+                        </span>
+                      }
+                    </td>
+                        
+                    <td class="evaluacion-cell">
+                      <div class="evaluacion-container">                        
+                        <span class="badge-status" 
+                              [ngClass]="{
+                                'pendiente': item.propuesto === 0,
+                                'evaluado': item.propuesto === 1,
+                                'propuesto': item.propuesto === 2
+                              }">
+                          <i class="bi" 
+                            [ngClass]="{
+                              'bi-clock-history': item.propuesto === 0,
+                              'bi-pencil-square': item.propuesto === 1,
+                              'bi-check-circle-fill': item.propuesto === 2
+                            }">
+                          </i>
+
+                          {{ 
+                            item.propuesto === 2 ? 'Evaluado y Propuesto' : 
+                            (item.propuesto === 1 ? 'Evaluación Realizada' : 'Pendiente de Evaluar') 
+                          }}
+                        </span>
+
+                        <div class="porcentaje-wrapper">
+                          <div class="porcentaje-info">
+                            <span class="porcentaje-label">EVALUACIÓN</span>
+                            <span class="porcentaje-valor" [class.completo]="(item.totalPorcentaje ?? 0) >= 100">
+                              {{ item.totalPorcentaje ?? 0 }}<small>%</small> de 100%
+                            </span>
+                          </div>
+
+                          <div class="progress-bar-track">
+                            <div 
+                              class="progress-bar-fill" 
+                              [style.width.%]="item.totalPorcentaje ?? 0"
+                              [class.full]="(item.totalPorcentaje ?? 0) >= 100">
+                            </div>
+                          </div>
+                        </div>
+
+                      </div>
+                    </td>
+
+                    <td class="text-end pe-3">
+                        @if (item.estadoExpediente != 'BORRADOR') {
+                          <button type="button"
+                              class="btn btn-outline-verde btn-sm fw-bold d-inline-flex align-items-center gap-1 shadow-sm"
+                              (click)="auditarExpediente(item)"
+                              title="Revisar documentación y dictaminar">
+                            <i class="bi bi-search text-dorado"></i>
+                            <span>Revisar</span>
+                          </button>
+                        }
+                    </td>
+
+                  </tr>
+                } @empty {
+                  @if (!cargando()) {
+                    <tr>
+                      <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-journal-x fs-1 text-secondary opacity-50 mb-2 d-block"></i>
+                        <h6 class="fw-bold text-dark mb-1">No hay expedientes para mostrar</h6>
+                        <p class="small mb-0">No se encontraron aspirantes bajo los filtros seleccionados.</p>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        @if (totalPaginas() > 1) {
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 mt-3 small text-muted">
+            <span>
+              Página <strong>{{ paginaActual() + 1 }}</strong> de <strong>{{ totalPaginas() }}</strong> (Total: {{ totalElementos() }} registros)
+            </span>
+
+            <nav aria-label="Navegación de expedientes">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item" [class.disabled]="paginaActual() === 0">
+                  <button class="page-link" (click)="cambiarPagina(paginaActual() - 1)">
+                    <i class="bi bi-chevron-left"></i>
+                  </button>
+                </li>
+
+                @for (p of obtenerArregloPaginas(); track p) {
+                  <li class="page-item" [class.active]="p === paginaActual()">
+                    <button class="page-link" (click)="cambiarPagina(p)">{{ p + 1 }}</button>
+                  </li>
+                }
+
+                <li class="page-item" [class.disabled]="paginaActual() === totalPaginas() - 1">
+                  <button class="page-link" (click)="cambiarPagina(paginaActual() + 1)">
+                    <i class="bi bi-chevron-right"></i>
+                  </button>
+                </li>
+              </ul>
+            </nav>
+          </div>
+        }
+
+      </div>
+    </div>
+
+  </main>
+</div>
