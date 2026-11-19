@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: convocatoriacsg
+  profiles:
+    active: local
+
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 20MB

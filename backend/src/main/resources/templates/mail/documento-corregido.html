@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observación en Documentación</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f6f8; font-family: 'Segoe UI', Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="table-layout: fixed; background-color: #f4f6f8; padding: 40px 0;">
+        <tr>
+            <td align="center">
+                
+                <!-- Tarjeta Principal -->
+                <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
+                    
+                    <!-- Encabezado con Paleta Pantone -->
+                    <tr>
+                        <td style="background-color: #1e5b4f; padding: 32px 40px; border-bottom: 4px solid #DCAB68; text-align: left;">
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td style="vertical-align: middle;">
+                                        <span style="color: #e6d194; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; display: block; margin-bottom: 6px;">
+                                            Sistema de Premios
+                                        </span>
+                                        <h1 style="color: #ffffff; font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">
+                                            <img th:src="|cid:iconoNotify|" src="cid:iconoNotify" width="28" height="28" alt="check" style="display: inline-block; vertical-align: middle; margin-right: 10px; border: 0;" />
+                                            <span style="vertical-align: middle;">Notificación de Corrección de Documento</span>
+                                        </h1>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Cuerpo del Mensaje -->
+                    <tr>
+                        <td style="padding: 40px 30px; color: #333333; font-size: 15px; line-height: 1.6;">
+                            
+                            <p style="margin-top: 0; font-size: 16px; font-weight: 600; color: #002f2a;">
+                                Estimado(a) <span th:text="${nombreCompleto}">Nombre</span>,
+                            </p>
+
+                            <p style="margin-bottom: 25px; color: #555555;">
+                                Hacemos de su conocimiento que la observación correspondiente a su documento ha sido subsanada. El nuevo archivo será evaluado a detalle por el equipo correspondiente.
+                            </p>
+
+                            <!-- Tabla Detalle de la Observación -->
+                            <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #fdfaf6; border: 1px solid #e6d194; border-radius: 6px; margin-bottom: 30px;">
+                                <tr>
+                                    <td style="padding: 20px;">
+                                        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                                            <tr>
+                                                <td style="padding-bottom: 10px; font-weight: bold; color: #1e5b4f; width: 35%; font-size: 13px; text-transform: uppercase;">Documento Requerido:</td>
+                                                <td style="padding-bottom: 10px; color: #333333; font-size: 14px; font-weight: 600;" th:text="${nombreArchivoRequerido}">Documento Solicitado</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding-bottom: 15px; font-weight: bold; color: #1e5b4f; font-size: 13px; text-transform: uppercase;">Archivo Subido:</td>
+                                                <td style="padding-bottom: 15px; color: #666666; font-size: 14px; font-style: italic;" th:text="${nombreArchivoSubido}">Dcoumento Cargado</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2" style="border-top: 1px solid #e6d194; padding-top: 15px;">
+                                                    <span style="font-weight: bold; color: #611232; font-size: 13px; text-transform: uppercase; display: block; margin-bottom: 5px;">
+                                                        Observaciones Subsanadas:
+                                                    </span>
+                                                    <div style="background-color: #ffffff; padding: 12px 15px; border-left: 4px solid #9b2247; border-radius: 3px; color: #611232; font-size: 14px; line-height: 1.5;" th:text="${observacion}">
+                                                        Observación del documento
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- Pie de Página -->
+                    <tr>
+                        <td style="background-color: #002f2a; padding: 24px 40px; text-align: center; border-top: 1px solid #1e5b4f;">
+                            <p style="color: #e6d194; font-size: 12px; margin: 0 0 6px 0; font-weight: 600;">
+                                Consejo de Salubridad General
+                            </p>
+                            <p style="color: #a3b8b5; font-size: 11px; margin: 0; line-height: 1.4;">
+                                Este es un mensaje automático generado por el sistema, por favor no responda a este correo.<br>
+                                © Todos los derechos reservados.
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+</body>
+</html>
