@@ -1,79 +1,67 @@
 <div class="login-wrapper d-flex flex-column align-items-center justify-content-center min-vh-100 p-3">
-  
+
   <div class="card login-card shadow-lg border-0 overflow-hidden">
     <div class="row g-0">
-      
+
       <div class="col-lg-5 d-none d-lg-flex flex-column p-5 brand-sidebar" style="text-align: center;">
         <div>
-          <div class="mb-4" >
-             <img src="assets/img/logsalud.png" alt="Logo Salud" width="220" height="250">
+          <div class="mb-4">
+            <img src="assets/img/logsalud.png" alt="Logo Salud" width="220" height="250">
           </div>
           <hr class="border-gold opacity-50 my-4">
           <div class="d-flex justify-content-center font-noto text-white small">
-            <h2 class="font-patria fw-bold text-white mb-3">Sistema de Premios</h2>
+            <h2 class="font-patria fw-bold text-white mb-3">Gestor de Archivos</h2>
           </div>
-        </div>        
+        </div>
       </div>
 
       <div class="col-lg-7 p-4 p-md-5 form-panel d-flex flex-column justify-content-center">
-        
+
         <div class="mb-4 mt-4" style="text-align: center; height: 100px;">
-          <h3 class="font-patria fw-bold text-guinda mb-1">Iniciar Sesión</h3>          
+          <h3 class="font-patria fw-bold text-guinda mb-1">Iniciar Sesión</h3>
         </div>
 
         <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" autocomplete="off">
-          
+
           <div class="mb-3">
-            <label for="username" class="form-label font-noto small fw-semibold text-dark">Correo Electrónico</label>
+            <label for="username" class="form-label font-noto small fw-semibold text-dark">Usuario</label>
             <div class="input-group has-validation">
               <span class="input-group-text bg-light border-end-0" [ngClass]="{'border-danger': esCampoInvalido('username')}">
-                <i class="bi bi-envelope text-muted"></i>
+                <i class="bi bi-person text-muted"></i>
               </span>
-              <input type="email" autocomplete="new-user"
-                     class="form-control bg-light border-start-0 ps-0" 
+              <input type="text" autocomplete="username"
+                     class="form-control bg-light border-start-0 ps-0"
                      [ngClass]="{'is-invalid': esCampoInvalido('username')}"
-                     id="username" 
-                     formControlName="username" 
-                     placeholder="cuenta@correo.gob.mx">
-
-              <div class="invalid-feedback" *ngIf="loginForm.get('username')?.errors as errors">
-                <span *ngIf="errors['required']">El correo electrónico es obligatorio.</span>
-                <span *ngIf="errors['email']">Ingresa un correo electrónico válido.</span>
-              </div>
+                     id="username"
+                     formControlName="username"
+                     placeholder="usuario">
+              @if (esCampoInvalido('username')) {
+                <div class="invalid-feedback">El usuario es obligatorio.</div>
+              }
             </div>
           </div>
 
           <div class="mb-3">
-            <div class="d-flex justify-content-between">
-              <label for="password" class="form-label font-noto small fw-semibold text-dark">Contraseña</label>
-              <a [routerLink]="['/recuperar']" class="small text-decoration-none text-guinda font-noto fw-medium">¿Olvidaste tu contraseña?</a>
-            </div>
+            <label for="password" class="form-label font-noto small fw-semibold text-dark">Contraseña</label>
             <div class="input-group has-validation">
               <span class="input-group-text bg-light border-end-0" [ngClass]="{'border-danger': esCampoInvalido('password')}">
                 <i class="bi bi-lock text-muted"></i>
               </span>
-              <input type="password" autocomplete="new-password"
-                     class="form-control bg-light border-start-0 ps-0" 
+              <input type="password" autocomplete="current-password"
+                     class="form-control bg-light border-start-0 ps-0"
                      [ngClass]="{'is-invalid': esCampoInvalido('password')}"
-                     id="password" 
-                     formControlName="password" 
+                     id="password"
+                     formControlName="password"
                      placeholder="**********">
-
-              <div class="invalid-feedback" *ngIf="loginForm.get('password')?.errors as errors">
-                <span *ngIf="errors['required']">La contraseña es obligatoria.</span>
-                <span *ngIf="errors['minlength']">La contraseña debe tener al menos 8 caracteres.</span>
-              </div>
+              @if (esCampoInvalido('password')) {
+                <div class="invalid-feedback">La contraseña es obligatoria.</div>
+              }
             </div>
           </div>
 
           <button type="submit" class="btn btn-guinda font-noto w-100 py-2.5 fw-bold shadow-sm mb-3">
             <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar al Sistema
           </button>
-
-          <div class="text-center font-noto small text-muted mt-3">
-            ¿No tienes cuenta de participante? 
-            <a [routerLink]="['/registro']" class="fw-bold text-decoration-none text-guinda">Regístrate aquí</a>
-          </div>
         </form>
 
       </div>

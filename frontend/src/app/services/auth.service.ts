@@ -1,66 +1,43 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { LoginRequest, LoginResponse } from '../models/login.model';
-import { environment } from '../../environments/environment.development';
+import { environment } from '../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+const STORAGE_KEY = 'session';
+
+@Injectable({ providedIn: 'root' })
 export class AuthService {
-
   private readonly http = inject(HttpClient);
-  private readonly API_URL = environment.apiUrlAuth;
+  private readonly router = inject(Router);
 
-  readonly currentUser = signal<LoginResponse | null>(this.obtenerUsuarioAlmacenado());
+  private readonly session = signal<LoginResponse | null>(this.readStoredSession());
+
+  readonly currentUser = this.session.asReadonly();
+  readonly isLoggedIn = computed(() => !!this.session()?.token);
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.API_URL}/auth/login`, credentials).pipe(
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(
       tap((res) => {
-        console.log(res);
-        sessionStorage.setItem('token', res.token);
-        sessionStorage.setItem('userName', res.userName);
-        sessionStorage.setItem('idUsuario', res.idUsuario.toString());
-        sessionStorage.setItem('rol', res.rol);
-        sessionStorage.setItem('usuario', JSON.stringify(res));
-
-        this.currentUser.set(res);
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(res));
+        this.session.set(res);
       })
     );
   }
 
   logout(): void {
-    sessionStorage.clear();
-    this.currentUser.set(null);
-  }
-
-  isLoggedIn(): boolean {
-    return !!sessionStorage.getItem('token');
-  }
-
-  getUsuarioLogueado(): LoginResponse | null {
-    return this.currentUser() || this.obtenerUsuarioAlmacenado();
+    sessionStorage.removeItem(STORAGE_KEY);
+    this.session.set(null);
+    this.router.navigate(['/login']);
   }
 
   getToken(): string | null {
-    return sessionStorage.getItem('token');
+    return this.session()?.token ?? null;
   }
 
-  getUserName(): string {
-    return sessionStorage.getItem('userName') || '';
-  }
-
-  getRol(): string {
-    return sessionStorage.getItem('rol') || '';
-  }
-
-  getIdUsuario(): number | null {
-    const id = sessionStorage.getItem('idUsuario');
-    return id ? Number(id) : null;
-  }
-
-  private obtenerUsuarioAlmacenado(): LoginResponse | null {
-    const raw = sessionStorage.getItem('usuario');
+  private readStoredSession(): LoginResponse | null {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw) as LoginResponse;

@@ -1,0 +1,67 @@
+<app-navbar />
+
+<main class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="h4 mb-0">Mis carpetas</h2>
+    <button type="button" class="btn btn-primary" (click)="openModal()">
+      <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="text-center text-muted py-5">
+      <div class="spinner-border spinner-border-sm me-2" role="status"></div>Cargando carpetas...
+    </div>
+  } @else if (folders().length === 0) {
+    <div class="text-center text-muted py-5">
+      <i class="bi bi-folder2-open display-4 d-block mb-2"></i>
+      Aún no tienes carpetas. Crea la primera con "Nueva Carpeta".
+    </div>
+  } @else {
+    <div class="row g-3">
+      @for (folder of folders(); track folder.id) {
+        <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+          <a [routerLink]="['/folders', folder.id]" class="text-decoration-none text-reset">
+            <div class="card folder-card h-100 shadow-sm">
+              <div class="card-body">
+                <i class="bi bi-folder-fill folder-icon"></i>
+                <h3 class="h6 mt-2 mb-1 text-break">{{ folder.name }}</h3>
+                <p class="text-muted small mb-0">{{ folder.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+            </div>
+          </a>
+        </div>
+      }
+    </div>
+  }
+</main>
+
+@if (modalOpen()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="closeModal()">
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+      <form class="modal-content" [formGroup]="folderForm" (ngSubmit)="createFolder()">
+        <div class="modal-header">
+          <h5 class="modal-title">Nueva Carpeta</h5>
+          <button type="button" class="btn-close" aria-label="Cerrar" (click)="closeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <label for="folderName" class="form-label">Nombre</label>
+          <input id="folderName" type="text" class="form-control" maxlength="150" autofocus
+                 formControlName="name" [class.is-invalid]="esNombreInvalido()"
+                 placeholder="Ej. Documentos 2026">
+          @if (esNombreInvalido()) {
+            <div class="invalid-feedback">El nombre es obligatorio (máximo 150 caracteres).</div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Crear
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

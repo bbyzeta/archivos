@@ -1,29 +1,24 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { inject } from '@angular/core';
+import { catchError, throwError } from 'rxjs';
+import { AuthService } from '../services/auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  if (req.url.includes('/auth/login')) {
-    return next(req);
-  }
+  const auth = inject(AuthService);
+  const isLogin = req.url.endsWith('/auth/login');
+  const token = auth.getToken();
 
-  const usuarioSession = sessionStorage.getItem('usuario');
-  
-  if (usuarioSession) {
-    try {
-      const usuario = JSON.parse(usuarioSession);
-      const token = usuario?.token;
+  const request = token && !isLogin
+    ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
+    : req;
 
-      if (token) {
-        const clonedReq = req.clone({
-          setHeaders: {
-            Authorization: `Bearer ${token}`
-          }
-        });
-        return next(clonedReq);
+  return next(request).pipe(
+    catchError((err: HttpErrorResponse) => {
+      // Auto-logout si el token expiró o es inválido (el login fallido no cuenta)
+      if (err.status === 401 && !isLogin) {
+        auth.logout();
       }
-    } catch (e) {
-      console.error('Error parseando el usuario de sessionStorage:', e);
-    }
-  }
-
-  return next(req);
+      return throwError(() => err);
+    })
+  );
 };

@@ -1,0 +1,35 @@
+.folder-icon {
+  color: #a57f2c;
+}
+
+.file-icon {
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
+.back-link {
+  color: #6c757d;
+
+  &:hover {
+    color: #212529;
+  }
+}
+
+.drop-zone {
+  cursor: pointer;
+  border: 2px dashed #ced4da;
+  background-color: #f8f9fa;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover,
+  &.dragging {
+    border-color: #a57f2c;
+    background-color: #fbf6ea;
+  }
+}
+
+.drop-icon {
+  display: block;
+  font-size: 2.5rem;
+  color: #a57f2c;
+}

@@ -1,54 +1,46 @@
 package csg.gob.mx.convocatoria.controller;
 
-
-import java.util.Map;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import csg.gob.mx.convocatoria.dto.UsuarioDTO;
-import csg.gob.mx.convocatoria.entity.RolEntity;
-import csg.gob.mx.convocatoria.entity.UsuarioEntity;
-import csg.gob.mx.convocatoria.repository.UsuarioRepository;
+import csg.gob.mx.convocatoria.dto.LoginRequest;
+import csg.gob.mx.convocatoria.dto.LoginResponse;
+import csg.gob.mx.convocatoria.entity.UserEntity;
+import csg.gob.mx.convocatoria.repository.UserRepository;
 import csg.gob.mx.convocatoria.security.JwtProvider;
+import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtProvider jwtProvider;
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtProvider jwtProvider, UsuarioRepository usuarioRepository) {
+    public AuthController(AuthenticationManager authenticationManager, JwtProvider jwtProvider,
+            UserRepository userRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtProvider = jwtProvider;
-        this.usuarioRepository = usuarioRepository;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody UsuarioDTO loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.username(), loginRequest.password())
-        );
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        var authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.username(), request.password()));
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String jwt = jwtProvider.generateToken(userDetails);
-        
-        UsuarioEntity usuario = this.usuarioRepository.findByUsername(userDetails.getUsername()).get();
-        String rolPrincipal = usuario.getRoles().stream()
-                .map(RolEntity::getNombre)
-                .findFirst()
-                .orElse("ROLE_USER");
+        UserEntity user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
+        String token = jwtProvider.generateToken(userDetails);
 
-        return ResponseEntity.ok(Map.of("token", jwt, "userName", userDetails.getUsername(), "idUsuario", usuario.getIdUsuario(), "rol", rolPrincipal));
+        return ResponseEntity.ok(
+                new LoginResponse(token, user.getId(), user.getUsername(), user.getFullName(), user.getRole()));
     }
 }
-

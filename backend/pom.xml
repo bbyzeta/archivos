@@ -14,8 +14,8 @@
 	<groupId>com.sistema</groupId>
 	<artifactId>convocatoria-csg</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>convocatoria-csg</name>
-	<description>Sistema de Premios del CSG</description>
+	<name>archivos</name>
+	<description>Gestor de Archivos Web</description>
 
 	<properties>
 		<java.version>21</java.version>
@@ -80,24 +80,15 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi-ooxml</artifactId>
-			<version>5.2.5</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-mail</artifactId>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-mysql</artifactId>
 		</dependency>
 	</dependencies>
 

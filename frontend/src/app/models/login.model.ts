@@ -5,7 +5,8 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string;
-  userName: string;
-  idUsuario: number;
-  rol: string;
+  userId: string;
+  username: string;
+  fullName: string;
+  role: string;
 }

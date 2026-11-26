@@ -1,5 +1,6 @@
 package csg.gob.mx.convocatoria.security;
 
+import java.util.List;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -8,33 +9,28 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import csg.gob.mx.convocatoria.entity.UsuarioEntity;
-import csg.gob.mx.convocatoria.repository.UsuarioRepository;
-
-import java.util.List;
+import csg.gob.mx.convocatoria.entity.UserEntity;
+import csg.gob.mx.convocatoria.repository.UserRepository;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final UsuarioRepository usuarioRepository;
+    private final UserRepository userRepository;
 
-    public CustomUserDetailsService(UsuarioRepository usuarioRepository) {
-        this.usuarioRepository = usuarioRepository;
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UsuarioEntity usuario = usuarioRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("El usuario " + username + " no fue hallado."));
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
-        if (!usuario.isActivo()) {
-            throw new UsernameNotFoundException("El usuario ingresado está inactivo.");
-        }
-
-        return new User(
-                usuario.getUsername(),
-                usuario.getPassword(),
-                List.of(new SimpleGrantedAuthority("User"))
-        );
+        return User.builder()
+                .username(user.getUsername())
+                .password(user.getPasswordHash())
+                .disabled(!user.isActive())
+                .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())))
+                .build();
     }
 }

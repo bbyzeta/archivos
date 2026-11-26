@@ -1,0 +1,118 @@
+<app-navbar />
+
+<main class="container py-4">
+  <a routerLink="/home" class="back-link small text-decoration-none">
+    <i class="bi bi-arrow-left me-1"></i>Volver a mis carpetas
+  </a>
+
+  @if (loading()) {
+    <div class="text-center text-muted py-5">
+      <div class="spinner-border spinner-border-sm me-2" role="status"></div>Cargando carpeta...
+    </div>
+  } @else if (folder(); as currentFolder) {
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 mb-4">
+      <h2 class="h4 mb-0 text-break">
+        <i class="bi bi-folder-fill folder-icon me-2"></i>{{ currentFolder.name }}
+      </h2>
+      <button type="button" class="btn btn-outline-secondary btn-sm"
+              (click)="copyLink('folder', currentFolder.publicUrl)">
+        @if (copiedKey() === 'folder') {
+          <i class="bi bi-check2 me-1"></i>Copiado
+        } @else {
+          <i class="bi bi-link-45deg me-1"></i>Copiar link público
+        }
+      </button>
+    </div>
+
+    <!-- Zona de subida -->
+    <label class="drop-zone d-block text-center rounded p-4 mb-3" [class.dragging]="dragging()"
+           (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
+      <i class="bi bi-cloud-arrow-up drop-icon"></i>
+      <div class="fw-semibold">Arrastra archivos aquí o haz clic para seleccionarlos</div>
+      <div class="text-muted small">Se suben hasta 3 archivos en paralelo</div>
+      <input type="file" multiple hidden (change)="onFilesSelected($event)">
+    </label>
+
+    <!-- Cola de subida -->
+    @if (uploads().length > 0) {
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+          <span class="small fw-semibold">Cola de subida</span>
+          <button type="button" class="btn btn-link btn-sm p-0" (click)="clearFinished()">Limpiar finalizados</button>
+        </div>
+        <ul class="list-group list-group-flush">
+          @for (item of uploads(); track item.id) {
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between small">
+                <span class="text-truncate me-3">{{ item.file.name }}</span>
+                <span class="text-nowrap">
+                  @switch (item.status) {
+                    @case ('pending') { <span class="text-muted">En espera</span> }
+                    @case ('uploading') { <span>{{ item.progress }}%</span> }
+                    @case ('done') { <span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>Listo</span> }
+                    @case ('error') { <span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>{{ item.error }}</span> }
+                  }
+                </span>
+              </div>
+              @if (item.status === 'uploading' || item.status === 'pending') {
+                <div class="progress mt-1" style="height: 4px;">
+                  <div class="progress-bar" [style.width.%]="item.progress"></div>
+                </div>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <!-- Archivos -->
+    @if (files().length === 0) {
+      <div class="text-center text-muted py-5">
+        <i class="bi bi-files display-4 d-block mb-2"></i>
+        Esta carpeta aún no tiene archivos.
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Tamaño</th>
+              <th>Subido</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (file of files(); track file.id) {
+              <tr>
+                <td class="text-break">
+                  <i class="bi {{ fileIcon(file) }} file-icon me-2"></i>
+                  @if (file.relativePath) { <span class="text-muted">{{ file.relativePath }}/</span> }{{ file.filename }}
+                </td>
+                <td>{{ fileType(file) }}</td>
+                <td class="text-nowrap">{{ formatSize(file.sizeBytes) }}</td>
+                <td class="text-nowrap">{{ file.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="text-end text-nowrap">
+                  <button type="button" class="btn btn-outline-secondary btn-sm me-1" (click)="copyLink(file.id, file.publicUrl)">
+                    @if (copiedKey() === file.id) {
+                      <i class="bi bi-check2"></i> Copiado
+                    } @else {
+                      <i class="bi bi-link-45deg"></i> Copiar link
+                    }
+                  </button>
+                  <a class="btn btn-outline-secondary btn-sm me-1" [href]="file.publicUrl + '?download=true'" title="Descargar">
+                    <i class="bi bi-download"></i>
+                  </a>
+                  <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar" (click)="deleteFile(file)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</main>
