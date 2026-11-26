@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { ChangePasswordRequest, CreateUserRequest, User } from '../models/user.model';
+import { ChangePasswordRequest, CreateUserRequest, UpdateUserRequest, User } from '../models/user.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -15,6 +15,11 @@ export class UserService {
 
   create(request: CreateUserRequest): Observable<User> {
     return this.http.post<User>(this.url, request);
+  }
+
+  /** Edita el nombre completo y el rol. */
+  update(id: string, request: UpdateUserRequest): Observable<User> {
+    return this.http.patch<User>(`${this.url}/${id}`, request);
   }
 
   setActive(id: string, active: boolean): Observable<User> {

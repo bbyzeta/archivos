@@ -51,9 +51,27 @@ public class JwtProvider {
         }
     }
 
+    /**
+     * El token es válido si pertenece al usuario y no fue emitido antes del último cambio de contraseña
+     * (cambiar o restablecer la contraseña cierra las sesiones abiertas).
+     */
     public boolean isTokenValid(String token, UserDetails userDetails) {
         String username = extractUsernameOrNull(token);
-        return username != null && username.equals(userDetails.getUsername());
+        if (username == null || !username.equals(userDetails.getUsername())) return false;
+
+        if (userDetails instanceof AppUserDetails app && app.getPasswordChangedAt() != null) {
+            Date issuedAt;
+            try {
+                issuedAt = extractClaim(token, Claims::getIssuedAt);
+            } catch (JwtException | IllegalArgumentException e) {
+                return false;
+            }
+            // El claim iat tiene precisión de segundos
+            if (issuedAt == null || issuedAt.toInstant().getEpochSecond() < app.getPasswordChangedAt().getEpochSecond()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private <T> T extractClaim(String token, Function<Claims, T> resolver) {

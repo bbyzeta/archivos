@@ -41,6 +41,9 @@ public class UserEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "password_changed_at")
+    private LocalDateTime passwordChangedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

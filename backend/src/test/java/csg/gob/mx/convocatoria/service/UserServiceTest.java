@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import csg.gob.mx.convocatoria.dto.ChangePasswordRequest;
 import csg.gob.mx.convocatoria.dto.CreateUserRequest;
+import csg.gob.mx.convocatoria.dto.UpdateUserRequest;
 import csg.gob.mx.convocatoria.dto.UserResponse;
 import csg.gob.mx.convocatoria.entity.UserEntity;
 import csg.gob.mx.convocatoria.repository.UserRepository;
@@ -152,5 +153,119 @@ class UserServiceTest {
         service.changeOwnPassword("ana", new ChangePasswordRequest("vieja-clave-1", "nueva-clave-2"));
 
         assertThat(encoder.matches("nueva-clave-2", ana.getPasswordHash())).isTrue();
+    }
+
+    // ---------- edición, último administrador y sesiones ----------
+
+    private UserEntity admin(String username) {
+        UserEntity u = user(username, "x");
+        u.setRole("ADMIN");
+        return u;
+    }
+
+    private UpdateUserRequest edit(String fullName, String role) {
+        return new UpdateUserRequest(fullName, role);
+    }
+
+    @Test
+    void editaElNombreYElRolDeOtroUsuario() {
+        UserEntity ana = user("ana", "x");
+
+        UserResponse response = service.update(ana.getId(), edit("  Ana María  ", "ADMIN"), "admin");
+
+        assertThat(response.fullName()).isEqualTo("Ana María");
+        assertThat(response.role()).isEqualTo("ADMIN");
+        assertThat(ana.getUsername()).isEqualTo("ana"); // el nombre de usuario no cambia
+    }
+
+    @Test
+    void nadiePuedeCambiarSuPropioRolPeroSiSuNombre() {
+        UserEntity yo = admin("admin");
+
+        assertThatThrownBy(() -> service.update(yo.getId(), edit("Admin", "USER"), "admin"))
+                .satisfies(t -> assertStatus(t, HttpStatus.BAD_REQUEST));
+        assertThat(yo.getRole()).isEqualTo("ADMIN");
+
+        assertThat(service.update(yo.getId(), edit("Nuevo nombre", "ADMIN"), "admin").fullName()).isEqualTo("Nuevo nombre");
+    }
+
+    @Test
+    void noSeLeQuitaElRolDeAdministradorAlUltimoAdministradorActivo() {
+        UserEntity ultimo = admin("jefe");
+        when(userRepository.countByRoleAndActive("ADMIN", true)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.update(ultimo.getId(), edit("Jefe", "USER"), "otro"))
+                .satisfies(t -> assertStatus(t, HttpStatus.CONFLICT));
+        assertThat(ultimo.getRole()).isEqualTo("ADMIN");
+    }
+
+    @Test
+    void sePuedeQuitarElRolDeAdministradorSiHayOtroAdministradorActivo() {
+        UserEntity jefe = admin("jefe");
+        when(userRepository.countByRoleAndActive("ADMIN", true)).thenReturn(2L);
+
+        assertThat(service.update(jefe.getId(), edit("Jefe", "USER"), "otro").role()).isEqualTo("USER");
+    }
+
+    @Test
+    void noSeDesactivaAlUltimoAdministradorActivo() {
+        UserEntity ultimo = admin("jefe");
+        when(userRepository.countByRoleAndActive("ADMIN", true)).thenReturn(1L);
+
+        assertThatThrownBy(() -> service.setActive(ultimo.getId(), false, "otro"))
+                .satisfies(t -> assertStatus(t, HttpStatus.CONFLICT));
+        assertThat(ultimo.isActive()).isTrue();
+    }
+
+    @Test
+    void sePuedeDesactivarUnAdministradorSiQuedaOtroActivo() {
+        UserEntity jefe = admin("jefe");
+        when(userRepository.countByRoleAndActive("ADMIN", true)).thenReturn(2L);
+
+        assertThat(service.setActive(jefe.getId(), false, "otro").active()).isFalse();
+    }
+
+    @Test
+    void laReglaDelUltimoAdministradorNoAfectaAUsuariosNormalesNiAAdministradoresInactivos() {
+        UserEntity normal = user("ana", "x");
+        UserEntity inactivo = admin("baja");
+        inactivo.setActive(false);
+        when(userRepository.countByRoleAndActive("ADMIN", true)).thenReturn(1L);
+
+        assertThat(service.setActive(normal.getId(), false, "admin").active()).isFalse();
+        assertThat(service.update(inactivo.getId(), edit("Baja", "USER"), "admin").role()).isEqualTo("USER");
+    }
+
+    @Test
+    void editarUnUsuarioInexistenteDevuelve404() {
+        UUID unknown = UUID.randomUUID();
+        when(userRepository.findById(unknown)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(unknown, edit("X", "USER"), "admin"))
+                .satisfies(t -> assertStatus(t, HttpStatus.NOT_FOUND));
+    }
+
+    @Test
+    void restablecerOCambiarLaContraseñaRegistraElInstanteParaCerrarSesiones() {
+        UserEntity ana = user("ana", "vieja-clave-1");
+        assertThat(ana.getPasswordChangedAt()).isNull();
+
+        LocalDateTime before = LocalDateTime.now().minusSeconds(1);
+        service.resetPassword(ana.getId(), "nueva-clave-2");
+        assertThat(ana.getPasswordChangedAt()).isAfter(before);
+
+        ana.setPasswordChangedAt(null);
+        service.changeOwnPassword("ana", new ChangePasswordRequest("nueva-clave-2", "otra-clave-3"));
+        assertThat(ana.getPasswordChangedAt()).isAfter(before);
+    }
+
+    @Test
+    void unCambioDeContraseñaFallidoNoRegistraElInstante() {
+        UserEntity ana = user("ana", "vieja-clave-1");
+
+        assertThatThrownBy(() -> service.changeOwnPassword("ana", new ChangePasswordRequest("equivocada", "nueva-clave-2")))
+                .isInstanceOf(ResponseStatusException.class);
+
+        assertThat(ana.getPasswordChangedAt()).isNull();
     }
 }

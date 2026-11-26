@@ -19,6 +19,7 @@ import csg.gob.mx.convocatoria.dto.ChangePasswordRequest;
 import csg.gob.mx.convocatoria.dto.CreateUserRequest;
 import csg.gob.mx.convocatoria.dto.ResetPasswordRequest;
 import csg.gob.mx.convocatoria.dto.SetActiveRequest;
+import csg.gob.mx.convocatoria.dto.UpdateUserRequest;
 import csg.gob.mx.convocatoria.dto.UserResponse;
 import csg.gob.mx.convocatoria.service.UserService;
 import jakarta.validation.Valid;
@@ -43,6 +44,12 @@ public class AdminUserController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
         return userService.create(request);
+    }
+
+    @PatchMapping("/{id}")
+    public UserResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateUserRequest request,
+            Authentication authentication) {
+        return userService.update(id, request, authentication.getName());
     }
 
     @PatchMapping("/{id}/active")

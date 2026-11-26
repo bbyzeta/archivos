@@ -1,5 +1,6 @@
 package csg.gob.mx.convocatoria.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,12 +12,15 @@ import org.springframework.web.server.ResponseStatusException;
 
 import csg.gob.mx.convocatoria.dto.ChangePasswordRequest;
 import csg.gob.mx.convocatoria.dto.CreateUserRequest;
+import csg.gob.mx.convocatoria.dto.UpdateUserRequest;
 import csg.gob.mx.convocatoria.dto.UserResponse;
 import csg.gob.mx.convocatoria.entity.UserEntity;
 import csg.gob.mx.convocatoria.repository.UserRepository;
 
 @Service
 public class UserService {
+
+    static final String ADMIN = "ADMIN";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -50,22 +54,51 @@ public class UserService {
         return toResponse(userRepository.save(user));
     }
 
-    /** Activa o desactiva un usuario. Nadie puede desactivar su propia cuenta (evita quedarse sin acceso). */
+    /**
+     * Edita el nombre y el rol. Nadie puede cambiar su propio rol, y no se puede quitar el rol de administrador
+     * al último administrador activo.
+     */
+    @Transactional
+    public UserResponse update(UUID id, UpdateUserRequest request, String currentUsername) {
+        UserEntity user = getUser(id);
+        String newRole = request.role();
+
+        if (!newRole.equals(user.getRole())) {
+            if (user.getUsername().equals(currentUsername)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No puedes cambiar tu propio rol.");
+            }
+            if (ADMIN.equals(user.getRole())) {
+                ensureNotLastActiveAdmin(user);
+            }
+        }
+
+        user.setFullName(request.fullName().trim());
+        user.setRole(newRole);
+        return toResponse(userRepository.save(user));
+    }
+
+    /**
+     * Activa o desactiva un usuario. Nadie puede desactivar su propia cuenta, y no se puede desactivar al último
+     * administrador activo (el sistema no puede quedarse sin administradores).
+     */
     @Transactional
     public UserResponse setActive(UUID id, boolean active, String currentUsername) {
         UserEntity user = getUser(id);
-        if (!active && user.getUsername().equals(currentUsername)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No puedes desactivar tu propia cuenta.");
+        if (!active) {
+            if (user.getUsername().equals(currentUsername)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No puedes desactivar tu propia cuenta.");
+            }
+            ensureNotLastActiveAdmin(user);
         }
         user.setActive(active);
         return toResponse(userRepository.save(user));
     }
 
-    /** Restablece la contraseña de otro usuario (acción de administrador). */
+    /** Restablece la contraseña de otro usuario (acción de administrador) y cierra sus sesiones abiertas. */
     @Transactional
     public void resetPassword(UUID id, String newPassword) {
         UserEntity user = getUser(id);
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        applyPassword(user, newPassword);
         userRepository.save(user);
     }
 
@@ -81,8 +114,21 @@ public class UserService {
         if (request.currentPassword().equals(request.newPassword())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La nueva contraseña debe ser distinta de la actual.");
         }
-        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        applyPassword(user, request.newPassword());
         userRepository.save(user);
+    }
+
+    /** Guarda el nuevo hash y marca el instante: los tokens emitidos antes de este momento dejan de ser válidos. */
+    private void applyPassword(UserEntity user, String newPassword) {
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setPasswordChangedAt(LocalDateTime.now());
+    }
+
+    /** Si el usuario es un administrador activo, debe quedar al menos otro administrador activo. */
+    private void ensureNotLastActiveAdmin(UserEntity user) {
+        if (ADMIN.equals(user.getRole()) && user.isActive() && userRepository.countByRoleAndActive(ADMIN, true) <= 1) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Debe existir al menos un administrador activo.");
+        }
     }
 
     private UserEntity getUser(UUID id) {

@@ -1,9 +1,9 @@
 package csg.gob.mx.convocatoria.security;
 
+import java.time.ZoneId;
 import java.util.List;
 
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -26,11 +26,12 @@ public class CustomUserDetailsService implements UserDetailsService {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
 
-        return User.builder()
-                .username(user.getUsername())
-                .password(user.getPasswordHash())
-                .disabled(!user.isActive())
-                .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())))
-                .build();
+        return new AppUserDetails(
+                user.getUsername(),
+                user.getPasswordHash(),
+                user.isActive(),
+                List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole())),
+                user.getPasswordChangedAt() == null ? null
+                        : user.getPasswordChangedAt().atZone(ZoneId.systemDefault()).toInstant());
     }
 }

@@ -17,54 +17,103 @@
       <div class="spinner-border spinner-border-sm me-2" role="status"></div>Cargando usuarios...
     </div>
   } @else {
-    <div class="surface"><div class="table-responsive">
-      <table class="table table-hover align-middle">
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Nombre</th>
-            <th>Rol</th>
-            <th>Estado</th>
-            <th>Creado</th>
-            <th class="text-end">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (user of users(); track user.id) {
-            <tr [class.text-muted]="!user.active">
-              <td class="text-break fw-semibold">
-                {{ user.username }}
-                @if (user.id === currentUserId()) { <span class="badge text-bg-light border ms-1">Tú</span> }
-              </td>
-              <td class="text-break">{{ user.fullName }}</td>
-              <td>
-                <span class="badge" [class.text-bg-dark]="user.role === 'ADMIN'" [class.text-bg-secondary]="user.role !== 'ADMIN'">
-                  {{ user.role === 'ADMIN' ? 'Administrador' : 'Usuario' }}
-                </span>
-              </td>
-              <td>
-                <span class="badge" [class.text-bg-success]="user.active" [class.text-bg-danger]="!user.active">
-                  {{ user.active ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td class="text-nowrap">{{ user.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-              <td class="text-end text-nowrap">
-                <button type="button" class="btn btn-outline-secondary btn-sm me-1" title="Restablecer contraseña"
-                        (click)="openReset(user)">
-                  <i class="bi bi-key"></i>
-                </button>
-                <button type="button" class="btn btn-sm"
-                        [class.btn-outline-danger]="user.active" [class.btn-outline-success]="!user.active"
-                        [disabled]="user.id === currentUserId()"
-                        [title]="user.active ? 'Desactivar' : 'Activar'" (click)="toggleActive(user)">
-                  <i class="bi" [class.bi-person-x]="user.active" [class.bi-person-check]="!user.active"></i>
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div></div>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+      <span class="text-muted small">{{ summary() }}</span>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <input type="search" class="form-control form-control-sm search-box" placeholder="Buscar usuario o nombre..."
+               aria-label="Buscar usuario" [value]="search()" (input)="onSearch($event)">
+        <select class="form-select form-select-sm filter-select" aria-label="Filtrar por rol"
+                [value]="roleFilter()" (change)="onRoleFilter($event)">
+          <option value="all" [selected]="roleFilter() === 'all'">Todos los roles</option>
+          <option value="ADMIN" [selected]="roleFilter() === 'ADMIN'">Administradores</option>
+          <option value="USER" [selected]="roleFilter() === 'USER'">Usuarios</option>
+        </select>
+        <select class="form-select form-select-sm filter-select" aria-label="Filtrar por estado"
+                [value]="statusFilter()" (change)="onStatusFilter($event)">
+          <option value="all" [selected]="statusFilter() === 'all'">Todos los estados</option>
+          <option value="active" [selected]="statusFilter() === 'active'">Activos</option>
+          <option value="inactive" [selected]="statusFilter() === 'inactive'">Inactivos</option>
+        </select>
+        @if (hasFilters()) {
+          <button type="button" class="btn btn-link btn-sm p-0" (click)="clearFilters()">Limpiar filtros</button>
+        }
+      </div>
+    </div>
+
+    @if (visibleUsers().length === 0) {
+      <div class="empty-state">
+        <i class="bi bi-search empty-icon"></i>
+        <div class="fw-semibold">No hay usuarios que coincidan</div>
+        <div class="small">Prueba con otra búsqueda o limpia los filtros.</div>
+      </div>
+    } @else {
+      <div class="surface table-sortable">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th class="sort-th" [attr.aria-sort]="ariaSort('username')" (click)="sortBy('username')">
+                  Usuario <i class="bi {{ sortIcon('username') }} ms-1 small"></i>
+                </th>
+                <th class="sort-th" [attr.aria-sort]="ariaSort('fullName')" (click)="sortBy('fullName')">
+                  Nombre <i class="bi {{ sortIcon('fullName') }} ms-1 small"></i>
+                </th>
+                <th class="sort-th" [attr.aria-sort]="ariaSort('role')" (click)="sortBy('role')">
+                  Rol <i class="bi {{ sortIcon('role') }} ms-1 small"></i>
+                </th>
+                <th class="sort-th" [attr.aria-sort]="ariaSort('active')" (click)="sortBy('active')">
+                  Estado <i class="bi {{ sortIcon('active') }} ms-1 small"></i>
+                </th>
+                <th class="sort-th" [attr.aria-sort]="ariaSort('createdAt')" (click)="sortBy('createdAt')">
+                  Creado <i class="bi {{ sortIcon('createdAt') }} ms-1 small"></i>
+                </th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of visibleUsers(); track user.id) {
+                <tr [class.text-muted]="!user.active">
+                  <td class="text-break fw-semibold">
+                    {{ user.username }}
+                    @if (isSelf(user)) { <span class="badge text-bg-light border ms-1">Tú</span> }
+                  </td>
+                  <td class="text-break">{{ user.fullName }}</td>
+                  <td>
+                    <span class="badge" [class.text-bg-dark]="user.role === 'ADMIN'" [class.text-bg-secondary]="user.role !== 'ADMIN'">
+                      {{ user.role === 'ADMIN' ? 'Administrador' : 'Usuario' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [class.text-bg-success]="user.active" [class.text-bg-danger]="!user.active">
+                      {{ user.active ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td class="text-nowrap">{{ user.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="text-end text-nowrap">
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-1" title="Editar nombre y rol"
+                            aria-label="Editar usuario" (click)="openEdit(user)">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-1" title="Restablecer contraseña"
+                            aria-label="Restablecer contraseña" (click)="openReset(user)">
+                      <i class="bi bi-key"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm"
+                            [class.btn-outline-danger]="user.active" [class.btn-outline-success]="!user.active"
+                            [disabled]="isSelf(user)"
+                            [title]="isSelf(user) ? 'No puedes desactivar tu propia cuenta' : (user.active ? 'Desactivar' : 'Activar')"
+                            [attr.aria-label]="user.active ? 'Desactivar usuario' : 'Activar usuario'"
+                            (click)="toggleActive(user)">
+                      <i class="bi" [class.bi-person-x]="user.active" [class.bi-person-check]="!user.active"></i>
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
   }
 </main>
 
@@ -118,6 +167,46 @@
   </div>
 }
 
+@if (modal() === 'edit' && selected(); as target) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="closeModal()">
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+      <form class="modal-content" [formGroup]="editForm" (ngSubmit)="updateUser()" autocomplete="off">
+        <div class="modal-header">
+          <h5 class="modal-title">Editar usuario</h5>
+          <button type="button" class="btn-close" aria-label="Cerrar" (click)="closeModal()"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small">Usuario: <strong>{{ target.username }}</strong> (no se puede cambiar).</p>
+          <div class="mb-3">
+            <label for="editFullName" class="form-label">Nombre completo</label>
+            <input id="editFullName" type="text" class="form-control" maxlength="150"
+                   formControlName="fullName" [class.is-invalid]="invalid('edit', 'fullName')">
+            @if (invalid('edit', 'fullName')) { <div class="invalid-feedback">El nombre es obligatorio.</div> }
+          </div>
+          <div>
+            <label for="editRole" class="form-label">Rol</label>
+            <select id="editRole" class="form-select" formControlName="role" [attr.disabled]="isSelf(target) ? '' : null">
+              <option value="USER">Usuario (gestiona sus archivos y carpetas)</option>
+              <option value="ADMIN">Administrador (además gestiona usuarios)</option>
+            </select>
+            @if (isSelf(target)) {
+              <div class="form-text">No puedes cambiar tu propio rol.</div>
+            }
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="closeModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
 @if (modal() === 'reset' && selected(); as target) {
   <div class="modal-backdrop fade show"></div>
   <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="closeModal()">
@@ -128,7 +217,9 @@
           <button type="button" class="btn-close" aria-label="Cerrar" (click)="closeModal()"></button>
         </div>
         <div class="modal-body">
-          <p class="text-muted small">Nueva contraseña para <strong>{{ target.username }}</strong>.</p>
+          <p class="text-muted small">
+            Nueva contraseña para <strong>{{ target.username }}</strong>. Sus sesiones abiertas se cerrarán.
+          </p>
           <label for="resetPassword" class="form-label">Nueva contraseña</label>
           <input id="resetPassword" type="password" class="form-control" autocomplete="new-password"
                  formControlName="newPassword" [class.is-invalid]="invalid('reset', 'newPassword')">

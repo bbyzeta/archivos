@@ -71,7 +71,9 @@ export class NavbarComponent {
       next: () => {
         this.saving.set(false);
         this.passwordModalOpen.set(false);
-        this.alertService.mostrarAlertaConTimer('Listo', 'Tu contraseña se actualizó correctamente.');
+        // El cambio cierra todas las sesiones abiertas (incluida esta): se vuelve a iniciar sesión
+        this.alertService.mostrarAlertaConTimer('Contraseña actualizada', 'Por seguridad, inicia sesión de nuevo.', 2500);
+        this.auth.logout();
       },
       error: (err: HttpErrorResponse) => {
         this.saving.set(false);

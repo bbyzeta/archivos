@@ -2,6 +2,7 @@ package csg.gob.mx.convocatoria.security;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -15,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -26,13 +28,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.server.ResponseStatusException;
 
 import csg.gob.mx.convocatoria.dto.PublicFolderResponse;
 import csg.gob.mx.convocatoria.dto.UserResponse;
@@ -325,5 +330,82 @@ class SecurityAccessTest {
         mvc.perform(put("/api/admin/folders/" + id + "/directories/color").header("Authorization", auth)
                 .contentType(MediaType.APPLICATION_JSON).content("{\"path\":\"Docs\",\"color\":\"azul\"}"))
                 .andExpect(status().isBadRequest());
+    }
+
+    // ---------- edición de usuarios y cierre de sesiones ----------
+
+    @Test
+    void soloUnAdministradorPuedeEditarUsuarios() throws Exception {
+        UUID id = UUID.randomUUID();
+        String body = "{\"fullName\":\"Ana\",\"role\":\"USER\"}";
+        when(userService.update(any(), any(), any()))
+                .thenReturn(new UserResponse(id, "ana", "Ana", "USER", true, LocalDateTime.now()));
+
+        mvc.perform(patch("/api/admin/users/" + id).header("Authorization", bearer("ana"))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        mvc.perform(patch("/api/admin/users/" + id).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(patch("/api/admin/users/" + id).header("Authorization", bearer("admin"))
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk());
+    }
+
+    @Test
+    void laEdicionValidaElRolYElNombre() throws Exception {
+        String auth = bearer("admin");
+        String url = "/api/admin/users/" + UUID.randomUUID();
+
+        mvc.perform(patch(url).header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"fullName\":\"Ana\",\"role\":\"ROOT\"}")).andExpect(status().isBadRequest());
+        mvc.perform(patch(url).header("Authorization", auth).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"fullName\":\"  \",\"role\":\"USER\"}")).andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void unTokenEmitidoAntesDelCambioDeContraseñaDejaDeSerValido() throws Exception {
+        String token = bearer("ana"); // emitido ahora
+        // La contraseña "cambió" una hora después de emitirse el token
+        when(userDetailsService.loadUserByUsername("ana")).thenReturn(
+                new AppUserDetails("ana", encoder.encode(PASSWORD), true,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER")), Instant.now().plusSeconds(3600)));
+
+        mvc.perform(get("/api/admin/folders").header("Authorization", token)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void unTokenEmitidoDespuesDelCambioDeContraseñaSigueSiendoValido() throws Exception {
+        when(userDetailsService.loadUserByUsername("ana")).thenReturn(
+                new AppUserDetails("ana", encoder.encode(PASSWORD), true,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER")), Instant.now().minusSeconds(3600)));
+        when(folderService.findAll()).thenReturn(List.of());
+
+        mvc.perform(get("/api/admin/folders").header("Authorization", bearer("ana"))).andExpect(status().isOk());
+    }
+
+    @Test
+    void unUsuarioSinCambiosDeContraseñaConservaSusSesiones() throws Exception {
+        when(userDetailsService.loadUserByUsername("ana")).thenReturn(
+                new AppUserDetails("ana", encoder.encode(PASSWORD), true,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER")), null));
+        when(folderService.findAll()).thenReturn(List.of());
+
+        mvc.perform(get("/api/admin/folders").header("Authorization", bearer("ana"))).andExpect(status().isOk());
+    }
+
+    @Test
+    void losErroresDeNegocioDevuelvenElMotivoEnElCuerpo() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual es incorrecta."))
+                .when(userService).changeOwnPassword(any(), any());
+        when(userService.update(any(), any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Debe existir al menos un administrador activo."));
+
+        mvc.perform(put("/api/admin/users/me/password").header("Authorization", bearer("ana"))
+                .contentType(MediaType.APPLICATION_JSON).content(CHANGE_PASSWORD))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("La contraseña actual es incorrecta."));
+
+        mvc.perform(patch("/api/admin/users/" + UUID.randomUUID()).header("Authorization", bearer("admin"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"fullName\":\"Jefe\",\"role\":\"USER\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Debe existir al menos un administrador activo."));
     }
 }

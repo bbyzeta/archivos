@@ -20,3 +20,8 @@ export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
 }
+
+export interface UpdateUserRequest {
+  fullName: string;
+  role: UserRole;
+}
