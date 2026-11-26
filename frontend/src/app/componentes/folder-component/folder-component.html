@@ -25,13 +25,20 @@
     </div>
 
     <!-- Zona de subida -->
-    <label class="drop-zone d-block text-center rounded p-4 mb-3" [class.dragging]="dragging()"
-           (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
+    <div class="drop-zone text-center rounded p-4 mb-3" [class.dragging]="dragging()"
+         (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
       <i class="bi bi-cloud-arrow-up drop-icon"></i>
-      <div class="fw-semibold">Arrastra archivos aquí o haz clic para seleccionarlos</div>
-      <div class="text-muted small">Se suben hasta 3 archivos en paralelo</div>
-      <input type="file" multiple hidden (change)="onFilesSelected($event)">
-    </label>
+      <div class="fw-semibold">Arrastra archivos o carpetas aquí</div>
+      <div class="text-muted small mb-3">Se suben hasta 3 archivos en paralelo</div>
+      <button type="button" class="btn btn-primary btn-sm me-2" (click)="fileInput.click()">
+        <i class="bi bi-file-earmark-plus me-1"></i>Seleccionar archivos
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="folderInput.click()">
+        <i class="bi bi-folder-plus me-1"></i>Seleccionar carpeta
+      </button>
+      <input #fileInput type="file" multiple hidden (change)="onFilesSelected($event)">
+      <input #folderInput type="file" webkitdirectory hidden (change)="onFolderSelected($event)">
+    </div>
 
     <!-- Cola de subida -->
     @if (uploads().length > 0) {
@@ -44,7 +51,9 @@
           @for (item of uploads(); track item.id) {
             <li class="list-group-item">
               <div class="d-flex justify-content-between small">
-                <span class="text-truncate me-3">{{ item.file.name }}</span>
+                <span class="text-truncate me-3">
+                  @if (item.relativePath) { <span class="text-muted">{{ item.relativePath }}/</span> }{{ item.file.name }}
+                </span>
                 <span class="text-nowrap">
                   @switch (item.status) {
                     @case ('pending') { <span class="text-muted">En espera</span> }

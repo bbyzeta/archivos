@@ -13,9 +13,19 @@ import { copyToClipboard, fileIcon, fileType, formatSize, publicPageUrl } from '
 /** Subidas simultáneas máximas. */
 const MAX_CONCURRENT_UPLOADS = 3;
 
+/** Máximo de archivos por lote (evita saturar la cola y la interfaz con carpetas enormes). */
+const MAX_FILES_PER_BATCH = 1000;
+
+interface PendingFile {
+  file: File;
+  /** Carpeta dentro de la carpeta destino, p. ej. "Docs/2026"; vacío para la raíz. */
+  relativePath: string;
+}
+
 interface UploadItem {
   id: number;
   file: File;
+  relativePath: string;
   status: 'pending' | 'uploading' | 'done' | 'error';
   progress: number;
   error?: string;
@@ -57,8 +67,18 @@ export class FolderComponent {
 
   onFilesSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    this.enqueue(Array.from(input.files ?? []));
+    this.enqueue(Array.from(input.files ?? []).map((file) => ({ file, relativePath: '' })));
     input.value = ''; // permite volver a elegir los mismos archivos
+  }
+
+  /** Carpeta elegida con el selector: cada archivo trae su ruta en webkitRelativePath ("Carpeta/sub/archivo.txt"). */
+  onFolderSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.enqueue(Array.from(input.files ?? []).map((file) => ({
+      file,
+      relativePath: this.dirname(file.webkitRelativePath)
+    })));
+    input.value = '';
   }
 
   onDragOver(event: DragEvent): void {
@@ -70,28 +90,24 @@ export class FolderComponent {
     this.dragging.set(false);
   }
 
-  onDrop(event: DragEvent): void {
+  async onDrop(event: DragEvent): Promise<void> {
     event.preventDefault();
     this.dragging.set(false);
 
-    const items = Array.from(event.dataTransfer?.items ?? []);
-    const files: File[] = [];
-    let skippedFolders = false;
+    // Las entradas deben leerse de forma síncrona: el DataTransfer se vacía tras el primer await
+    const dropped = Array.from(event.dataTransfer?.items ?? [])
+      .filter((item) => item.kind === 'file')
+      .map((item) => ({ entry: item.webkitGetAsEntry?.() ?? null, file: item.getAsFile() }));
 
-    for (const item of items) {
-      if (item.kind !== 'file') continue;
-      if (item.webkitGetAsEntry?.()?.isDirectory) {
-        skippedFolders = true;
-        continue;
+    const found: PendingFile[] = [];
+    for (const { entry, file } of dropped) {
+      if (entry) {
+        await this.collectEntry(entry, '', found);
+      } else if (file) {
+        found.push({ file, relativePath: '' });
       }
-      const file = item.getAsFile();
-      if (file) files.push(file);
     }
-
-    if (skippedFolders) {
-      this.alertService.mostrarAlerta('Aviso', 'Las carpetas no se pueden subir; selecciona archivos.', 'info', 'Entendido', '#13322b');
-    }
-    this.enqueue(files);
+    this.enqueue(found);
   }
 
   clearFinished(): void {
@@ -128,9 +144,47 @@ export class FolderComponent {
 
   // ---------- internos ----------
 
-  private enqueue(files: File[]): void {
-    for (const file of files) {
-      const item: UploadItem = { id: this.nextUploadId++, file, status: 'pending', progress: 0 };
+  /** Recorre recursivamente un archivo o directorio soltado y acumula sus archivos con su ruta relativa. */
+  private async collectEntry(entry: FileSystemEntry, parentPath: string, out: PendingFile[]): Promise<void> {
+    if (out.length > MAX_FILES_PER_BATCH) return;
+
+    if (entry.isFile) {
+      const file = await new Promise<File | null>((resolve) =>
+        (entry as FileSystemFileEntry).file((f) => resolve(f), () => resolve(null)));
+      if (file) out.push({ file, relativePath: parentPath });
+      return;
+    }
+
+    if (entry.isDirectory) {
+      const path = parentPath ? `${parentPath}/${entry.name}` : entry.name;
+      const reader = (entry as FileSystemDirectoryEntry).createReader();
+      // readEntries devuelve el contenido por lotes: hay que repetir hasta recibir una lista vacía
+      let batch: FileSystemEntry[];
+      do {
+        batch = await new Promise<FileSystemEntry[]>((resolve) => reader.readEntries(resolve, () => resolve([])));
+        for (const child of batch) {
+          await this.collectEntry(child, path, out);
+        }
+      } while (batch.length > 0);
+    }
+  }
+
+  private dirname(path: string): string {
+    const cut = path.lastIndexOf('/');
+    return cut < 0 ? '' : path.substring(0, cut);
+  }
+
+  private enqueue(pending: PendingFile[]): void {
+    if (pending.length === 0) return;
+    if (pending.length > MAX_FILES_PER_BATCH) {
+      this.alertService.mostrarAlerta('Demasiados archivos',
+        `Se pueden subir hasta ${MAX_FILES_PER_BATCH} archivos a la vez. Sube la carpeta por partes.`,
+        'warning', 'Entendido', '#13322b');
+      return;
+    }
+
+    for (const { file, relativePath } of pending) {
+      const item: UploadItem = { id: this.nextUploadId++, file, relativePath, status: 'pending', progress: 0 };
       this.uploads.update((list) => [...list, item]);
       this.uploadQueue$.next(item);
     }
@@ -139,7 +193,7 @@ export class FolderComponent {
   private upload(item: UploadItem) {
     this.patchUpload(item.id, { status: 'uploading' });
 
-    return this.folderService.uploadFile(this.folderId, item.file).pipe(
+    return this.folderService.uploadFile(this.folderId, item.file, item.relativePath).pipe(
       tap((event) => {
         if (event.type === HttpEventType.UploadProgress && event.total) {
           this.patchUpload(item.id, { progress: Math.round((event.loaded / event.total) * 100) });
