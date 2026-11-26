@@ -47,20 +47,30 @@
               <span class="input-group-text bg-light border-end-0" [ngClass]="{'border-danger': esCampoInvalido('password')}">
                 <i class="bi bi-lock text-muted"></i>
               </span>
-              <input type="password" autocomplete="current-password"
+              <input [type]="showPassword() ? 'text' : 'password'" autocomplete="current-password"
                      class="form-control bg-light border-start-0 ps-0"
                      [ngClass]="{'is-invalid': esCampoInvalido('password')}"
                      id="password"
                      formControlName="password"
                      placeholder="**********">
+              <button type="button" class="btn btn-outline-secondary" (click)="toggleShowPassword()"
+                      [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                      [attr.aria-pressed]="showPassword()">
+                <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
+              </button>
               @if (esCampoInvalido('password')) {
                 <div class="invalid-feedback">La contraseña es obligatoria.</div>
               }
             </div>
           </div>
 
-          <button type="submit" class="btn btn-guinda font-noto w-100 py-2.5 fw-bold shadow-sm mb-3">
-            <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar al Sistema
+          <button type="submit" class="btn btn-guinda font-noto w-100 py-2.5 fw-bold shadow-sm mb-3"
+                  [disabled]="submitting()">
+            @if (submitting()) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Ingresando...
+            } @else {
+              <i class="bi bi-box-arrow-in-right me-2"></i>Ingresar al Sistema
+            }
           </button>
         </form>
 
