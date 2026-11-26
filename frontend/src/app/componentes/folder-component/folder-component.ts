@@ -8,6 +8,7 @@ import { Folder, FolderFile } from '../../models/folder.model';
 import { FolderService } from '../../services/folder.service';
 import { AlertaService } from '../alerts/alert-component';
 import { NavbarComponent } from '../navbar-component/navbar-component';
+import { copyToClipboard, fileIcon, fileType, formatSize, publicPageUrl } from '../../utils/file-format';
 
 /** Subidas simultáneas máximas. */
 const MAX_CONCURRENT_UPLOADS = 3;
@@ -111,45 +112,19 @@ export class FolderComponent {
   }
 
   copyLink(key: string, url: string): void {
-    this.copyToClipboard(url);
+    copyToClipboard(url);
     this.copiedKey.set(key);
     setTimeout(() => {
       if (this.copiedKey() === key) this.copiedKey.set(null);
     }, 1800);
   }
 
-  // ---------- presentación ----------
+  // ---------- presentación (utilidades compartidas) ----------
 
-  formatSize(bytes: number): string {
-    if (bytes < 1024) return `${bytes} B`;
-    const units = ['KB', 'MB', 'GB', 'TB'];
-    let value = bytes / 1024;
-    let i = 0;
-    while (value >= 1024 && i < units.length - 1) {
-      value /= 1024;
-      i++;
-    }
-    return `${value.toFixed(value < 10 ? 1 : 0)} ${units[i]}`;
-  }
-
-  fileType(file: FolderFile): string {
-    const dot = file.filename.lastIndexOf('.');
-    return dot > 0 ? file.filename.substring(dot + 1).toUpperCase() : 'Archivo';
-  }
-
-  fileIcon(file: FolderFile): string {
-    const mime = file.mimeType;
-    if (mime.startsWith('image/')) return 'bi-file-earmark-image';
-    if (mime.startsWith('video/')) return 'bi-file-earmark-play';
-    if (mime.startsWith('audio/')) return 'bi-file-earmark-music';
-    if (mime === 'application/pdf') return 'bi-file-earmark-pdf';
-    if (/zip|rar|7z|tar|gzip/.test(mime)) return 'bi-file-earmark-zip';
-    if (/word|document/.test(mime)) return 'bi-file-earmark-word';
-    if (/excel|spreadsheet|csv/.test(mime)) return 'bi-file-earmark-excel';
-    if (/powerpoint|presentation/.test(mime)) return 'bi-file-earmark-slides';
-    if (mime.startsWith('text/')) return 'bi-file-earmark-text';
-    return 'bi-file-earmark';
-  }
+  readonly formatSize = formatSize;
+  readonly fileType = fileType;
+  readonly fileIcon = fileIcon;
+  readonly publicPageUrl = publicPageUrl;
 
   // ---------- internos ----------
 
@@ -213,25 +188,5 @@ export class FolderComponent {
   private failLoading(): void {
     this.loading.set(false);
     this.alertService.mostrarAlertaError('No se pudo cargar la carpeta.');
-  }
-
-  /** navigator.clipboard solo existe en HTTPS/localhost; se usa execCommand como alternativa. */
-  private copyToClipboard(text: string): void {
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(text).catch(() => this.legacyCopy(text));
-    } else {
-      this.legacyCopy(text);
-    }
-  }
-
-  private legacyCopy(text: string): void {
-    const area = document.createElement('textarea');
-    area.value = text;
-    area.style.position = 'fixed';
-    area.style.opacity = '0';
-    document.body.appendChild(area);
-    area.select();
-    document.execCommand('copy');
-    document.body.removeChild(area);
   }
 }

@@ -19,3 +19,9 @@ export interface FolderFile {
   uploadedAt: string;
   publicUrl: string;
 }
+
+export interface PublicFolder {
+  name: string;
+  publicSlug: string;
+  files: FolderFile[];
+}
