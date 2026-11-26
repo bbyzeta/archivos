@@ -24,12 +24,16 @@
       </button>
     </div>
 
+    <app-breadcrumb [path]="currentPath()" [rootLabel]="currentFolder.name" (navigate)="openFolder($event)" />
+
     <!-- Zona de subida -->
     <div class="drop-zone text-center rounded p-4 mb-3" [class.dragging]="dragging()"
          (dragover)="onDragOver($event)" (dragleave)="onDragLeave()" (drop)="onDrop($event)">
       <i class="bi bi-cloud-arrow-up drop-icon"></i>
       <div class="fw-semibold">Arrastra archivos o carpetas aquí</div>
-      <div class="text-muted small mb-3">Se suben hasta 3 archivos en paralelo</div>
+      <div class="text-muted small mb-3">
+        @if (currentPath()) { Se subirá a <strong>{{ currentPath() }}</strong> · }Hasta 3 archivos en paralelo
+      </div>
       <button type="button" class="btn btn-primary btn-sm me-2" (click)="fileInput.click()">
         <i class="bi bi-file-earmark-plus me-1"></i>Seleccionar archivos
       </button>
@@ -75,10 +79,10 @@
     }
 
     <!-- Archivos -->
-    @if (files().length === 0) {
+    @if (listing().folders.length === 0 && listing().files.length === 0) {
       <div class="text-center text-muted py-5">
         <i class="bi bi-files display-4 d-block mb-2"></i>
-        Esta carpeta aún no tiene archivos.
+        {{ currentPath() ? 'Esta carpeta está vacía.' : 'Esta carpeta aún no tiene archivos.' }}
       </div>
     } @else {
       <div class="table-responsive">
@@ -93,11 +97,24 @@
             </tr>
           </thead>
           <tbody>
-            @for (file of files(); track file.id) {
+            @for (sub of listing().folders; track sub.path) {
+              <tr class="folder-row" (dblclick)="openFolder(sub.path)">
+                <td class="text-break">
+                  <button type="button" class="btn btn-link p-0 text-decoration-none text-reset fw-semibold text-start"
+                          (click)="openFolder(sub.path)">
+                    <i class="bi bi-folder-fill folder-icon me-2"></i>{{ sub.name }}
+                  </button>
+                </td>
+                <td>Carpeta</td>
+                <td class="text-nowrap">{{ formatSize(sub.sizeBytes) }} · {{ sub.fileCount }} {{ sub.fileCount === 1 ? 'archivo' : 'archivos' }}</td>
+                <td class="text-nowrap">{{ sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td></td>
+              </tr>
+            }
+            @for (file of listing().files; track file.id) {
               <tr>
                 <td class="text-break">
-                  <i class="bi {{ fileIcon(file) }} file-icon me-2"></i>
-                  @if (file.relativePath) { <span class="text-muted">{{ file.relativePath }}/</span> }{{ file.filename }}
+                  <i class="bi {{ fileIcon(file) }} file-icon me-2"></i>{{ file.filename }}
                 </td>
                 <td>{{ fileType(file) }}</td>
                 <td class="text-nowrap">{{ formatSize(file.sizeBytes) }}</td>

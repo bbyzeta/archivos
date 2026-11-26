@@ -1,13 +1,15 @@
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Subject, catchError, mergeMap, tap } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { EMPTY, Subject, catchError, map, mergeMap, tap } from 'rxjs';
 import { Folder, FolderFile } from '../../models/folder.model';
 import { FolderService } from '../../services/folder.service';
 import { AlertaService } from '../alerts/alert-component';
+import { BreadcrumbComponent } from '../breadcrumb-component/breadcrumb-component';
 import { NavbarComponent } from '../navbar-component/navbar-component';
+import { joinPath, listDirectory } from '../../utils/file-explorer';
 import { copyToClipboard, fileIcon, fileType, formatSize, publicPageUrl } from '../../utils/file-format';
 
 /** Subidas simultáneas máximas. */
@@ -34,15 +36,21 @@ interface UploadItem {
 @Component({
   selector: 'app-folder',
   standalone: true,
-  imports: [DatePipe, RouterLink, NavbarComponent],
+  imports: [DatePipe, RouterLink, NavbarComponent, BreadcrumbComponent],
   templateUrl: './folder-component.html',
   styleUrl: './folder-component.scss'
 })
 export class FolderComponent {
   private readonly folderService = inject(FolderService);
   private readonly alertService = inject(AlertaService);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly folderId = inject(ActivatedRoute).snapshot.paramMap.get('id') ?? '';
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly folderId = this.route.snapshot.paramMap.get('id') ?? '';
+
+  /** Subcarpeta que se está viendo (query param `path`); vacío = raíz. Permite deep links y botón Atrás. */
+  readonly currentPath = toSignal(
+    this.route.queryParamMap.pipe(map((params) => params.get('path') ?? '')),
+    { initialValue: this.route.snapshot.queryParamMap.get('path') ?? '' });
 
   private readonly uploadQueue$ = new Subject<UploadItem>();
   private nextUploadId = 0;
@@ -53,6 +61,8 @@ export class FolderComponent {
   readonly dragging = signal(false);
   readonly uploads = signal<UploadItem[]>([]);
   readonly copiedKey = signal<string | null>(null);
+
+  readonly listing = computed(() => listDirectory(this.files(), this.currentPath()));
 
   constructor() {
     // Una sola cola: garantiza máximo 3 subidas en paralelo aunque se agreguen lotes nuevos
@@ -108,6 +118,11 @@ export class FolderComponent {
       }
     }
     this.enqueue(found);
+  }
+
+  /** Navega a una subcarpeta ('' = raíz) conservando la vista en la URL. */
+  openFolder(path: string): void {
+    this.router.navigate([], { relativeTo: this.route, queryParams: { path: path || null } });
   }
 
   clearFinished(): void {
@@ -183,7 +198,10 @@ export class FolderComponent {
       return;
     }
 
-    for (const { file, relativePath } of pending) {
+    // Lo que se sube se guarda dentro de la subcarpeta que se está viendo
+    const base = this.currentPath();
+    for (const { file, relativePath: relative } of pending) {
+      const relativePath = joinPath(base, relative);
       const item: UploadItem = { id: this.nextUploadId++, file, relativePath, status: 'pending', progress: 0 };
       this.uploads.update((list) => [...list, item]);
       this.uploadQueue$.next(item);

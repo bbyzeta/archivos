@@ -13,7 +13,7 @@
       {{ message }}
     </div>
   } @else if (folder(); as currentFolder) {
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
       <div>
         <h1 class="h4 mb-0 text-break">
           <i class="bi bi-folder-fill folder-icon me-2"></i>{{ currentFolder.name }}
@@ -33,53 +33,104 @@
         <i class="bi bi-files display-4 d-block mb-2"></i>
         Esta carpeta aún no tiene archivos.
       </div>
-    } @else if (visibleFiles().length === 0) {
-      <div class="text-center text-muted py-5">No hay archivos que coincidan con la búsqueda.</div>
     } @else {
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Tamaño</th>
-              <th>Subido</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (file of visibleFiles(); track file.id) {
-              <tr>
-                <td class="text-break">
-                  <i class="bi {{ fileIcon(file) }} file-icon me-2"></i>
-                  @if (file.relativePath) { <span class="text-muted">{{ file.relativePath }}/</span> }{{ file.filename }}
-                </td>
-                <td>{{ fileType(file) }}</td>
-                <td class="text-nowrap">{{ formatSize(file.sizeBytes) }}</td>
-                <td class="text-nowrap">{{ file.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td class="text-end text-nowrap">
-                  @if (isPreviewable(file)) {
-                    <a class="btn btn-outline-secondary btn-sm me-1" [href]="file.publicUrl" target="_blank"
-                       rel="noopener" title="Ver">
-                      <i class="bi bi-eye"></i>
-                    </a>
-                  }
-                  <button type="button" class="btn btn-outline-secondary btn-sm me-1" (click)="copyLink(file)">
-                    @if (copiedId() === file.id) {
-                      <i class="bi bi-check2"></i> Copiado
-                    } @else {
-                      <i class="bi bi-link-45deg"></i> Copiar link
+      @if (!searchResults()) {
+        <app-breadcrumb [path]="currentPath()" [rootLabel]="currentFolder.name" (navigate)="openFolder($event)" />
+      }
+
+      @if (searchResults(); as results) {
+        <!-- Resultados de búsqueda en todo el árbol -->
+        @if (results.length === 0) {
+          <div class="text-center text-muted py-5">No hay archivos que coincidan con la búsqueda.</div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Subido</th><th class="text-end">Acciones</th></tr>
+              </thead>
+              <tbody>
+                @for (file of results; track file.id) {
+                  <tr>
+                    <td class="text-break">
+                      <i class="bi {{ fileIcon(file) }} file-icon me-2"></i>
+                      @if (file.relativePath) {
+                        <a href="#" class="text-muted text-decoration-none"
+                           (click)="$event.preventDefault(); openFolder(file.relativePath)">{{ file.relativePath }}/</a>
+                      }{{ file.filename }}
+                    </td>
+                    <td>{{ fileType(file) }}</td>
+                    <td class="text-nowrap">{{ formatSize(file.sizeBytes) }}</td>
+                    <td class="text-nowrap">{{ file.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                    <td class="text-end text-nowrap">
+                      @if (isPreviewable(file)) {
+                        <a class="btn btn-outline-secondary btn-sm me-1" [href]="file.publicUrl" target="_blank" rel="noopener" title="Ver">
+                          <i class="bi bi-eye"></i>
+                        </a>
+                      }
+                      <button type="button" class="btn btn-outline-secondary btn-sm me-1" (click)="copyLink(file)">
+                        @if (copiedId() === file.id) { <i class="bi bi-check2"></i> Copiado } @else { <i class="bi bi-link-45deg"></i> Copiar link }
+                      </button>
+                      <a class="btn btn-primary btn-sm" [href]="file.publicUrl + '?download=true'">
+                        <i class="bi bi-download me-1"></i>Descargar
+                      </a>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      } @else if (listing().folders.length === 0 && listing().files.length === 0) {
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-files display-4 d-block mb-2"></i>
+          Esta carpeta está vacía.
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr><th>Nombre</th><th>Tipo</th><th>Tamaño</th><th>Subido</th><th class="text-end">Acciones</th></tr>
+            </thead>
+            <tbody>
+              @for (sub of listing().folders; track sub.path) {
+                <tr class="folder-row" (dblclick)="openFolder(sub.path)">
+                  <td class="text-break">
+                    <button type="button" class="btn btn-link p-0 text-decoration-none text-reset fw-semibold text-start"
+                            (click)="openFolder(sub.path)">
+                      <i class="bi bi-folder-fill folder-icon me-2"></i>{{ sub.name }}
+                    </button>
+                  </td>
+                  <td>Carpeta</td>
+                  <td class="text-nowrap">{{ formatSize(sub.sizeBytes) }} · {{ sub.fileCount }} {{ sub.fileCount === 1 ? 'archivo' : 'archivos' }}</td>
+                  <td class="text-nowrap">{{ sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td></td>
+                </tr>
+              }
+              @for (file of listing().files; track file.id) {
+                <tr>
+                  <td class="text-break"><i class="bi {{ fileIcon(file) }} file-icon me-2"></i>{{ file.filename }}</td>
+                  <td>{{ fileType(file) }}</td>
+                  <td class="text-nowrap">{{ formatSize(file.sizeBytes) }}</td>
+                  <td class="text-nowrap">{{ file.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="text-end text-nowrap">
+                    @if (isPreviewable(file)) {
+                      <a class="btn btn-outline-secondary btn-sm me-1" [href]="file.publicUrl" target="_blank" rel="noopener" title="Ver">
+                        <i class="bi bi-eye"></i>
+                      </a>
                     }
-                  </button>
-                  <a class="btn btn-primary btn-sm" [href]="file.publicUrl + '?download=true'">
-                    <i class="bi bi-download me-1"></i>Descargar
-                  </a>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm me-1" (click)="copyLink(file)">
+                      @if (copiedId() === file.id) { <i class="bi bi-check2"></i> Copiado } @else { <i class="bi bi-link-45deg"></i> Copiar link }
+                    </button>
+                    <a class="btn btn-primary btn-sm" [href]="file.publicUrl + '?download=true'">
+                      <i class="bi bi-download me-1"></i>Descargar
+                    </a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     }
   }
 </main>
