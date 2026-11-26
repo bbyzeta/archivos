@@ -6,13 +6,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
 import csg.gob.mx.convocatoria.dto.FolderRequest;
@@ -25,6 +31,7 @@ import csg.gob.mx.convocatoria.repository.UserRepository;
 @Service
 public class FolderService {
 
+    private static final Logger log = LoggerFactory.getLogger(FolderService.class);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final FolderRepository folderRepository;
@@ -80,6 +87,55 @@ public class FolderService {
         folder.setDiskPath(folderPath.toString());
         folder.setCreatedBy(creator);
         return toResponse(folderRepository.save(folder));
+    }
+
+    /** Renombra la carpeta. El slug y la ruta en disco no cambian, por lo que los links públicos siguen válidos. */
+    @Transactional
+    public FolderResponse rename(UUID id, FolderRequest request) {
+        FolderEntity folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carpeta no encontrada."));
+        folder.setName(request.name().trim());
+        return toResponse(folderRepository.save(folder));
+    }
+
+    /** Elimina la carpeta: registros en BD (archivos y subcarpetas por cascada) y su directorio en disco. */
+    @Transactional
+    public void delete(UUID id) {
+        FolderEntity folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carpeta no encontrada."));
+        Path folderPath = Path.of(folder.getDiskPath()).toAbsolutePath().normalize();
+
+        folderRepository.delete(folder);
+        folderRepository.flush();
+
+        // El disco se limpia solo si la transacción se confirma, para no perder archivos si la BD falla
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                deleteFromDisk(folderPath);
+            }
+        });
+    }
+
+    /** Borra el directorio de forma recursiva, solo si está dentro de la ruta base de almacenamiento. */
+    private void deleteFromDisk(Path folderPath) {
+        if (!folderPath.startsWith(storageBasePath) || folderPath.equals(storageBasePath)) {
+            log.warn("No se eliminó del disco {}: queda fuera de la ruta base {}", folderPath, storageBasePath);
+            return;
+        }
+        if (!Files.exists(folderPath)) return;
+
+        try (Stream<Path> walk = Files.walk(folderPath)) { // no sigue enlaces simbólicos
+            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    Files.deleteIfExists(p);
+                } catch (IOException e) {
+                    log.warn("No se pudo eliminar {}: {}", p, e.getMessage());
+                }
+            });
+        } catch (IOException e) {
+            log.warn("No se pudo recorrer {} para eliminarlo: {}", folderPath, e.getMessage());
+        }
     }
 
     private FolderResponse toResponse(FolderEntity folder) {

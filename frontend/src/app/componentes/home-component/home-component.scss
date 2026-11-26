@@ -11,3 +11,13 @@
     transform: translateY(-2px);
   }
 }
+
+.search-box {
+  width: 240px;
+  max-width: 100%;
+}
+
+// Los botones de acción deben quedar por encima del stretched-link de la tarjeta
+.card-actions {
+  z-index: 2;
+}

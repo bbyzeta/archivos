@@ -1,11 +1,17 @@
 <app-navbar />
 
 <main class="container py-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <h2 class="h4 mb-0">Mis carpetas</h2>
-    <button type="button" class="btn btn-primary" (click)="openModal()">
-      <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
-    </button>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      @if (folders().length > 0) {
+        <input type="search" class="form-control search-box" placeholder="Buscar carpeta..."
+               aria-label="Buscar carpeta" [value]="search()" (input)="onSearch($event)">
+      }
+      <button type="button" class="btn btn-primary" (click)="openModal()">
+        <i class="bi bi-folder-plus me-2"></i>Nueva Carpeta
+      </button>
+    </div>
   </div>
 
   @if (loading()) {
@@ -17,19 +23,30 @@
       <i class="bi bi-folder2-open display-4 d-block mb-2"></i>
       Aún no tienes carpetas. Crea la primera con "Nueva Carpeta".
     </div>
+  } @else if (filteredFolders().length === 0) {
+    <div class="text-center text-muted py-5">No hay carpetas que coincidan con la búsqueda.</div>
   } @else {
     <div class="row g-3">
-      @for (folder of folders(); track folder.id) {
+      @for (folder of filteredFolders(); track folder.id) {
         <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-          <a [routerLink]="['/folders', folder.id]" class="text-decoration-none text-reset">
-            <div class="card folder-card h-100 shadow-sm">
-              <div class="card-body">
-                <i class="bi bi-folder-fill folder-icon"></i>
-                <h3 class="h6 mt-2 mb-1 text-break">{{ folder.name }}</h3>
-                <p class="text-muted small mb-0">{{ folder.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
-              </div>
+          <div class="card folder-card h-100 shadow-sm position-relative">
+            <div class="card-body">
+              <i class="bi bi-folder-fill folder-icon"></i>
+              <h3 class="h6 mt-2 mb-1 text-break">
+                <!-- stretched-link: toda la tarjeta navega; los botones quedan por encima -->
+                <a [routerLink]="['/folders', folder.id]" class="text-decoration-none text-reset stretched-link">{{ folder.name }}</a>
+              </h3>
+              <p class="text-muted small mb-0">{{ folder.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
             </div>
-          </a>
+            <div class="card-actions position-relative d-flex justify-content-end gap-1 px-3 pb-2">
+              <button type="button" class="btn btn-outline-secondary btn-sm" title="Renombrar" (click)="openRename(folder)">
+                <i class="bi bi-pencil"></i>
+              </button>
+              <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar" (click)="deleteFolder(folder)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+          </div>
         </div>
       }
     </div>
@@ -40,9 +57,9 @@
   <div class="modal-backdrop fade show"></div>
   <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="closeModal()">
     <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
-      <form class="modal-content" [formGroup]="folderForm" (ngSubmit)="createFolder()">
+      <form class="modal-content" [formGroup]="folderForm" (ngSubmit)="submitFolder()">
         <div class="modal-header">
-          <h5 class="modal-title">Nueva Carpeta</h5>
+          <h5 class="modal-title">{{ renaming() ? 'Renombrar carpeta' : 'Nueva Carpeta' }}</h5>
           <button type="button" class="btn-close" aria-label="Cerrar" (click)="closeModal()"></button>
         </div>
         <div class="modal-body">
@@ -53,12 +70,15 @@
           @if (esNombreInvalido()) {
             <div class="invalid-feedback">El nombre es obligatorio (máximo 150 caracteres).</div>
           }
+          @if (renaming()) {
+            <div class="form-text">El link público de la carpeta no cambia.</div>
+          }
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="closeModal()">Cancelar</button>
           <button type="submit" class="btn btn-primary" [disabled]="saving()">
             @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-            Crear
+            {{ renaming() ? 'Guardar' : 'Crear' }}
           </button>
         </div>
       </form>

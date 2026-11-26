@@ -21,6 +21,14 @@ export class FolderService {
     return this.http.post<Folder>(this.url, request);
   }
 
+  rename(id: string, name: string): Observable<Folder> {
+    return this.http.put<Folder>(`${this.url}/${id}`, { name });
+  }
+
+  delete(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${id}`);
+  }
+
   listFiles(folderId: string): Observable<FolderFile[]> {
     return this.http.get<FolderFile[]>(`${this.url}/${folderId}/files`);
   }
