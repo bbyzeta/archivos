@@ -16,6 +16,7 @@ export class AuthService {
 
   readonly currentUser = this.session.asReadonly();
   readonly isLoggedIn = computed(() => !!this.session()?.token);
+  readonly isAdmin = computed(() => this.session()?.role === 'ADMIN');
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials).pipe(

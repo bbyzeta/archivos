@@ -1,0 +1,58 @@
+<nav class="navbar bg-light border-bottom px-3">
+  <div class="d-flex align-items-center gap-3">
+    <a class="navbar-brand mb-0 h1" routerLink="/home">Gestor de Archivos</a>
+    @if (auth.isAdmin()) {
+      <a class="small text-decoration-none" routerLink="/users"><i class="bi bi-people me-1"></i>Usuarios</a>
+    }
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    <span class="text-muted small me-1">{{ auth.currentUser()?.fullName }}</span>
+    <button type="button" class="btn btn-outline-secondary btn-sm" title="Cambiar mi contraseña" (click)="openPasswordModal()">
+      <i class="bi bi-key"></i>
+    </button>
+    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="auth.logout()">
+      <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión
+    </button>
+  </div>
+</nav>
+
+@if (passwordModalOpen()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="closePasswordModal()">
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+      <form class="modal-content" [formGroup]="passwordForm" (ngSubmit)="changePassword()" autocomplete="off">
+        <div class="modal-header">
+          <h5 class="modal-title">Cambiar mi contraseña</h5>
+          <button type="button" class="btn-close" aria-label="Cerrar" (click)="closePasswordModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="currentPassword" class="form-label">Contraseña actual</label>
+            <input id="currentPassword" type="password" class="form-control" autocomplete="current-password"
+                   formControlName="currentPassword" [class.is-invalid]="invalid('currentPassword')">
+            @if (invalid('currentPassword')) { <div class="invalid-feedback">Ingresa tu contraseña actual.</div> }
+          </div>
+          <div class="mb-3">
+            <label for="newPassword" class="form-label">Nueva contraseña</label>
+            <input id="newPassword" type="password" class="form-control" autocomplete="new-password"
+                   formControlName="newPassword" [class.is-invalid]="invalid('newPassword')">
+            @if (invalid('newPassword')) { <div class="invalid-feedback">Mínimo 8 caracteres (máximo 72).</div> }
+          </div>
+          <div>
+            <label for="confirmPassword" class="form-label">Confirmar nueva contraseña</label>
+            <input id="confirmPassword" type="password" class="form-control" autocomplete="new-password"
+                   formControlName="confirmPassword" [class.is-invalid]="invalid('confirmPassword') || mismatch()">
+            @if (mismatch()) { <div class="invalid-feedback">Las contraseñas no coinciden.</div> }
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="closePasswordModal()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            @if (saving()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
