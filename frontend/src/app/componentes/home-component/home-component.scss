@@ -1,14 +1,31 @@
 .folder-icon {
-  font-size: 2.5rem;
-  color: #a57f2c;
+  font-size: 2.6rem;
+  line-height: 1;
 }
 
-.folder-card {
-  border: 0;
-  transition: transform 0.15s ease;
+.item-card {
+  background: #fff;
+  border: 1px solid var(--csg-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 47, 42, 0.06);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 
   &:hover {
-    transform: translateY(-2px);
+    border-color: var(--csg-gold);
+    box-shadow: 0 3px 10px rgba(0, 47, 42, 0.12);
+  }
+}
+
+.card-body-main {
+  padding: 1rem 1rem 0.5rem;
+}
+
+.folder-link {
+  color: var(--csg-green-900);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--csg-guinda);
   }
 }
 

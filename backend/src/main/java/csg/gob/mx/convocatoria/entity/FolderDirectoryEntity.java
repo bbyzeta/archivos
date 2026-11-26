@@ -40,6 +40,9 @@ public class FolderDirectoryEntity {
     @Column(nullable = false, length = 300)
     private String path;
 
+    @Column(length = 7)
+    private String color;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

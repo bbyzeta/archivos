@@ -134,8 +134,8 @@ public class FolderFileService {
         List<FolderFileResponse> files = fileRepository.findByFolderIdOrderByUploadedAtDesc(folder.getId()).stream()
                 .map(f -> toResponse(folder, f))
                 .toList();
-        return new PublicFolderResponse(folder.getName(), folder.getPublicSlug(), files,
-                directoryService.paths(folder.getId()));
+        return new PublicFolderResponse(folder.getName(), folder.getPublicSlug(), folder.getColor(), files,
+                directoryService.directories(folder.getId()));
     }
 
     /** Busca el archivo por su ruta completa dentro de la carpeta pública (solo archivos registrados en BD). */

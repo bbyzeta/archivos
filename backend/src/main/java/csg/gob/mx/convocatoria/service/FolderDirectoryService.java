@@ -19,6 +19,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
+import csg.gob.mx.convocatoria.dto.DirectoryResponse;
 import csg.gob.mx.convocatoria.entity.FolderDirectoryEntity;
 import csg.gob.mx.convocatoria.entity.FolderEntity;
 import csg.gob.mx.convocatoria.entity.FolderFileEntity;
@@ -44,16 +45,16 @@ public class FolderDirectoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<String> list(UUID folderId) {
+    public List<DirectoryResponse> list(UUID folderId) {
         getFolder(folderId);
-        return paths(folderId);
+        return directories(folderId);
     }
 
     /** Lista las rutas registradas; también la usa la vista pública. */
     @Transactional(readOnly = true)
-    public List<String> paths(UUID folderId) {
+    public List<DirectoryResponse> directories(UUID folderId) {
         return directoryRepository.findByFolderIdOrderByPathAsc(folderId).stream()
-                .map(FolderDirectoryEntity::getPath)
+                .map(d -> new DirectoryResponse(d.getPath(), d.getColor()))
                 .toList();
     }
 
@@ -82,6 +83,33 @@ public class FolderDirectoryService {
         return path;
     }
 
+
+    /**
+     * Asigna o quita (null) el color de una subcarpeta. Si la subcarpeta solo existe por sus archivos (no tiene
+     * registro propio), se crea el registro para poder guardar el color.
+     */
+    @Transactional
+    public DirectoryResponse setColor(UUID folderId, String rawPath, String color) {
+        getFolder(folderId);
+        String path = requirePath(rawPath);
+        String prefix = path + "/";
+
+        FolderDirectoryEntity entity = directoryRepository.findByFolderIdOrderByPathAsc(folderId).stream()
+                .filter(d -> d.getPath().equals(path)).findFirst().orElse(null);
+        if (entity == null) {
+            boolean existsByFiles = fileRepository.findByFolderId(folderId).stream()
+                    .anyMatch(f -> f.getRelativePath().equals(path) || f.getRelativePath().startsWith(prefix));
+            if (!existsByFiles) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Carpeta no encontrada.");
+            }
+            entity = new FolderDirectoryEntity();
+            entity.setFolder(getFolder(folderId));
+            entity.setPath(path);
+        }
+        entity.setColor(color == null ? null : color.toLowerCase());
+        FolderDirectoryEntity saved = directoryRepository.save(entity);
+        return new DirectoryResponse(saved.getPath(), saved.getColor());
+    }
     /**
      * Elimina una subcarpeta. Si contiene archivos solo se elimina con `recursive`, que borra también sus
      * archivos (BD y disco) y sus subcarpetas.

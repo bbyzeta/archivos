@@ -49,22 +49,22 @@ describe('listDirectory', () => {
   });
 
   it('incluye las carpetas vacías registradas explícitamente', () => {
-    const { folders } = listDirectory(files, '', ['Vacia', 'Docs/Sub/Vacia']);
+    const { folders } = listDirectory(files, '', [{ path: 'Vacia', color: null }, { path: 'Docs/Sub/Vacia', color: null }]);
 
     const vacia = folders.find((f) => f.name === 'Vacia')!;
-    expect(vacia).toMatchObject({ path: 'Vacia', fileCount: 0, sizeBytes: 0, lastUploadedAt: '' });
-    expect(listDirectory(files, 'Docs', ['Docs/Sub/Vacia']).folders.map((f) => f.name)).toEqual(['2026', 'Sub']);
+    expect(vacia).toMatchObject({ path: 'Vacia', fileCount: 0, sizeBytes: 0, lastUploadedAt: '', color: null });
+    expect(listDirectory(files, 'Docs', [{ path: 'Docs/Sub/Vacia', color: null }]).folders.map((f) => f.name)).toEqual(['2026', 'Sub']);
   });
 
   it('una carpeta registrada que ya tiene archivos no se duplica', () => {
-    const { folders } = listDirectory(files, '', ['Docs']);
+    const { folders } = listDirectory(files, '', [{ path: 'Docs', color: null }]);
 
     expect(folders.filter((f) => f.name === 'Docs')).toHaveLength(1);
     expect(folders.find((f) => f.name === 'Docs')!.fileCount).toBe(3);
   });
 
   it('una carpeta registrada vacía se ve al entrar en ella sin contenido', () => {
-    const listing = listDirectory([], 'Vacia', ['Vacia']);
+    const listing = listDirectory([], 'Vacia', [{ path: 'Vacia', color: null }]);
 
     expect(listing.folders).toEqual([]);
     expect(listing.files).toEqual([]);

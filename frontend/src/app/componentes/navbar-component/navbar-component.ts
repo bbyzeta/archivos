@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, HostListener, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -42,6 +42,11 @@ export class NavbarComponent {
 
   closePasswordModal(): void {
     if (!this.saving()) this.passwordModalOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.passwordModalOpen()) this.closePasswordModal();
   }
 
   invalid(control: 'currentPassword' | 'newPassword' | 'confirmPassword'): boolean {

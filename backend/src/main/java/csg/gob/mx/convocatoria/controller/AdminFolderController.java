@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +19,10 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import csg.gob.mx.convocatoria.dto.ColorRequest;
+import csg.gob.mx.convocatoria.dto.DirectoryColorRequest;
 import csg.gob.mx.convocatoria.dto.DirectoryRequest;
+import csg.gob.mx.convocatoria.dto.DirectoryResponse;
 import csg.gob.mx.convocatoria.dto.FolderFileResponse;
 import csg.gob.mx.convocatoria.dto.FolderRequest;
 import csg.gob.mx.convocatoria.dto.FolderResponse;
@@ -64,6 +68,11 @@ public class AdminFolderController {
         return folderService.rename(id, request);
     }
 
+    @PatchMapping("/{id}/color")
+    public FolderResponse setColor(@PathVariable UUID id, @Valid @RequestBody ColorRequest request) {
+        return folderService.setColor(id, request.color());
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
@@ -83,7 +92,7 @@ public class AdminFolderController {
     }
 
     @GetMapping("/{id}/directories")
-    public List<String> listDirectories(@PathVariable UUID id) {
+    public List<DirectoryResponse> listDirectories(@PathVariable UUID id) {
         return folderDirectoryService.list(id);
     }
 
@@ -96,6 +105,11 @@ public class AdminFolderController {
     @PutMapping("/{id}/directories")
     public DirectoryRequest renameDirectory(@PathVariable UUID id, @Valid @RequestBody RenameDirectoryRequest request) {
         return new DirectoryRequest(folderDirectoryService.rename(id, request.path(), request.name()));
+    }
+
+    @PutMapping("/{id}/directories/color")
+    public DirectoryResponse setDirectoryColor(@PathVariable UUID id, @Valid @RequestBody DirectoryColorRequest request) {
+        return folderDirectoryService.setColor(id, request.path(), request.color());
     }
 
     @DeleteMapping("/{id}/directories")

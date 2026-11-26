@@ -6,22 +6,25 @@
   </a>
 
   @if (loading()) {
-    <div class="text-center text-muted py-5">
+    <div class="empty-state">
       <div class="spinner-border spinner-border-sm me-2" role="status"></div>Cargando carpeta...
     </div>
   } @else if (folder(); as currentFolder) {
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2 mb-4">
-      <h2 class="h4 mb-0 text-break">
-        <i class="bi bi-folder-fill folder-icon me-2"></i>{{ currentFolder.name }}
+    <div class="page-header mt-2">
+      <h2 class="h4 page-title mb-0 text-break">
+        <i class="bi bi-folder-fill me-2" [style.color]="currentFolder.color ?? defaultFolderColor"></i>{{ currentFolder.name }}
       </h2>
-      <button type="button" class="btn btn-outline-secondary btn-sm"
-              (click)="copyLink('folder', publicPageUrl(currentFolder.publicSlug))">
-        @if (copiedKey() === 'folder') {
-          <i class="bi bi-check2 me-1"></i>Copiado
-        } @else {
-          <i class="bi bi-link-45deg me-1"></i>Copiar link público
-        }
-      </button>
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <app-color-picker [current]="currentFolder.color" (pick)="setRootColor($event)" />
+        <button type="button" class="btn btn-outline-secondary btn-sm"
+                (click)="copyLink('folder', publicPageUrl(currentFolder.publicSlug))">
+          @if (copiedKey() === 'folder') {
+            <i class="bi bi-check2 me-1"></i>Copiado
+          } @else {
+            <i class="bi bi-link-45deg me-1"></i>Copiar link público
+          }
+        </button>
+      </div>
     </div>
 
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
@@ -51,8 +54,8 @@
 
     <!-- Cola de subida -->
     @if (uploads().length > 0) {
-      <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center py-2">
+      <div class="surface mb-4">
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom">
           <span class="small fw-semibold">Cola de subida</span>
           <button type="button" class="btn btn-link btn-sm p-0" (click)="clearFinished()">Limpiar finalizados</button>
         </div>
@@ -83,76 +86,37 @@
       </div>
     }
 
-    <!-- Archivos -->
+    <!-- Contenido -->
     @if (listing().folders.length === 0 && listing().files.length === 0) {
-      <div class="text-center text-muted py-5">
-        <i class="bi bi-files display-4 d-block mb-2"></i>
-        {{ currentPath() ? 'Esta carpeta está vacía.' : 'Esta carpeta aún no tiene archivos.' }}
+      <div class="empty-state">
+        <i class="bi bi-folder2-open empty-icon"></i>
+        <div class="fw-semibold">{{ currentPath() ? 'Esta carpeta está vacía' : 'Esta carpeta aún no tiene archivos' }}</div>
+        <div class="small">Arrastra archivos aquí, usa "Seleccionar archivos" o crea una subcarpeta con "Nueva carpeta".</div>
       </div>
     } @else {
-      <div class="table-responsive">
-        <table class="table table-hover align-middle">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th>Tamaño</th>
-              <th>Subido</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (sub of listing().folders; track sub.path) {
-              <tr class="folder-row" (dblclick)="openFolder(sub.path)">
-                <td class="text-break">
-                  <button type="button" class="btn btn-link p-0 text-decoration-none text-reset fw-semibold text-start"
-                          (click)="openFolder(sub.path)">
-                    <i class="bi bi-folder-fill folder-icon me-2"></i>{{ sub.name }}
-                  </button>
-                </td>
-                <td>Carpeta</td>
-                <td class="text-nowrap">{{ formatSize(sub.sizeBytes) }} · {{ sub.fileCount }} {{ sub.fileCount === 1 ? 'archivo' : 'archivos' }}</td>
-                <td class="text-nowrap">{{ sub.lastUploadedAt ? (sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
-                <td class="text-end text-nowrap">
-                  <button type="button" class="btn btn-outline-secondary btn-sm me-1" title="Renombrar carpeta"
-                          (click)="openRenameDirectory(sub)">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar carpeta"
-                          (click)="deleteDirectory(sub)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            }
-            @for (file of listing().files; track file.id) {
-              <tr>
-                <td class="text-break">
-                  <i class="bi {{ fileIcon(file) }} file-icon me-2"></i>{{ file.filename }}
-                </td>
-                <td>{{ fileType(file) }}</td>
-                <td class="text-nowrap">{{ formatSize(file.sizeBytes) }}</td>
-                <td class="text-nowrap">{{ file.uploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td class="text-end text-nowrap">
-                  <button type="button" class="btn btn-outline-secondary btn-sm me-1" (click)="copyLink(file.id, file.publicUrl)">
-                    @if (copiedKey() === file.id) {
-                      <i class="bi bi-check2"></i> Copiado
-                    } @else {
-                      <i class="bi bi-link-45deg"></i> Copiar link
-                    }
-                  </button>
-                  <a class="btn btn-outline-secondary btn-sm me-1" [href]="file.publicUrl + '?download=true'" title="Descargar">
-                    <i class="bi bi-download"></i>
-                  </a>
-                  <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar" (click)="deleteFile(file)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </div>
+      <app-explorer-toolbar [summary]="summary()" [view]="prefs.view()" [sort]="prefs.folderSort()"
+                            (viewChange)="prefs.setView($event)" (sortChange)="prefs.setFolderSort($event)" />
+
+      @if (selected().size > 0) {
+        <div class="selection-bar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <span class="small fw-semibold">
+            {{ selected().size }} {{ selected().size === 1 ? 'archivo seleccionado' : 'archivos seleccionados' }}
+          </span>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" (click)="clearSelection()">Cancelar</button>
+            <button type="button" class="btn btn-primary btn-sm" (click)="deleteSelected()">
+              <i class="bi bi-trash me-1"></i>Eliminar seleccionados
+            </button>
+          </div>
+        </div>
+      }
+
+      <app-explorer-view [folders]="listing().folders" [files]="listing().files" [view]="prefs.view()" [admin]="true"
+                         [selected]="selected()" [copiedId]="copiedKey()"
+                         (openFolder)="openFolder($event)" (renameFolder)="openRenameDirectory($event)"
+                         (deleteFolder)="deleteDirectory($event)" (colorFolder)="setSubfolderColor($event.entry, $event.color)"
+                         (copyLink)="copyLink($event.id, $event.publicUrl)" (deleteFile)="deleteFile($event)"
+                         (toggleSelect)="toggleSelect($event)" (toggleSelectAll)="toggleSelectAll()" />
     }
   }
 </main>

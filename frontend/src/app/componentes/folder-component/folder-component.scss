@@ -1,28 +1,19 @@
-.folder-icon {
-  color: #a57f2c;
-}
-
-.file-icon {
-  font-size: 1.2rem;
-  color: #6c757d;
-}
-
 .back-link {
-  color: #6c757d;
+  color: var(--csg-muted);
 
   &:hover {
-    color: #212529;
+    color: var(--csg-guinda);
   }
 }
 
 .drop-zone {
-  border: 2px dashed #ced4da;
-  background-color: #f8f9fa;
+  border: 2px dashed #b7c7c3;
+  background-color: #fff;
   transition: border-color 0.15s ease, background-color 0.15s ease;
 
   &:hover,
   &.dragging {
-    border-color: #a57f2c;
+    border-color: var(--csg-gold);
     background-color: #fbf6ea;
   }
 }
@@ -30,9 +21,13 @@
 .drop-icon {
   display: block;
   font-size: 2.5rem;
-  color: #a57f2c;
+  color: var(--csg-gold);
 }
 
-.folder-row {
-  cursor: pointer;
+.selection-bar {
+  background: #fbf6ea;
+  border: 1px solid var(--csg-gold-light);
+  border-left: 4px solid var(--csg-gold);
+  border-radius: 0.4rem;
+  padding: 0.5rem 0.75rem;
 }

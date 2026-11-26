@@ -1,6 +1,309 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * Identidad visual institucional (la misma de la pantalla de login):
+ * verde oscuro Pantone 627C / 626C, guinda 7420C / 7421C y dorado 1255C / 7402C sobre superficies claras.
+ */
+
+@font-face {
+  font-family: 'Patria';
+  src: url('./assets/fonts/Patria_Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Patria';
+  src: url('./assets/fonts/Patria_Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('./assets/fonts/NotoSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('./assets/fonts/NotoSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
+
+:root {
+  --csg-green-900: #002f2a;
+  --csg-green: #1e5b4f;
+  --csg-guinda: #9b2247;
+  --csg-guinda-dark: #611232;
+  --csg-gold: #a57f2c;
+  --csg-gold-light: #e6d194;
+  --csg-bg: #f4f6f9;
+  --csg-border: #dde3e1;
+  --csg-muted: #5f6f6b;
+
+  --bs-body-font-family: 'Noto Sans', Arial, sans-serif;
+  --bs-body-bg: var(--csg-bg);
+  --bs-link-color: var(--csg-guinda);
+  --bs-link-hover-color: var(--csg-guinda-dark);
+  --bs-link-color-rgb: 155, 34, 71;
+  --bs-link-hover-color-rgb: 97, 18, 50;
+  --bs-border-radius: 0.4rem;
+  --bs-secondary-color: var(--csg-muted);
+}
+
+body {
+  background-color: var(--csg-bg);
+}
+
+.font-patria {
+  font-family: 'Patria', Georgia, serif !important;
+}
+
+.font-noto {
+  font-family: 'Noto Sans', Arial, sans-serif !important;
+}
+
+.page-title {
+  font-family: 'Patria', Georgia, serif;
+  color: var(--csg-green-900);
+}
+
+.text-muted {
+  color: var(--csg-muted) !important;
+}
+
+/* ---------- Superficies ---------- */
+
+.surface {
+  background: #fff;
+  border: 1px solid var(--csg-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 47, 42, 0.06);
+}
+
+/* ---------- Botones ---------- */
+
+.btn-primary {
+  --bs-btn-bg: var(--csg-guinda);
+  --bs-btn-border-color: var(--csg-guinda);
+  --bs-btn-hover-bg: var(--csg-guinda-dark);
+  --bs-btn-hover-border-color: var(--csg-guinda-dark);
+  --bs-btn-active-bg: var(--csg-guinda-dark);
+  --bs-btn-active-border-color: var(--csg-guinda-dark);
+  --bs-btn-disabled-bg: var(--csg-guinda);
+  --bs-btn-disabled-border-color: var(--csg-guinda);
+  --bs-btn-focus-shadow-rgb: 155, 34, 71;
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--csg-green);
+  --bs-btn-border-color: #b7c7c3;
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--csg-green);
+  --bs-btn-hover-border-color: var(--csg-green);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--csg-green);
+  --bs-btn-active-border-color: var(--csg-green);
+  --bs-btn-disabled-color: #8a9a96;
+  --bs-btn-disabled-border-color: #d5dedb;
+  --bs-btn-focus-shadow-rgb: 30, 91, 79;
+}
+
+.btn-outline-danger {
+  --bs-btn-color: var(--csg-guinda);
+  --bs-btn-border-color: #d9a9b8;
+  --bs-btn-hover-bg: var(--csg-guinda);
+  --bs-btn-hover-border-color: var(--csg-guinda);
+  --bs-btn-active-bg: var(--csg-guinda);
+  --bs-btn-active-border-color: var(--csg-guinda);
+  --bs-btn-focus-shadow-rgb: 155, 34, 71;
+}
+
+.btn-link {
+  --bs-btn-color: var(--csg-green);
+  --bs-btn-hover-color: var(--csg-guinda);
+}
+
+/* ---------- Formularios ---------- */
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--csg-guinda);
+  box-shadow: 0 0 0 0.25rem rgba(155, 34, 71, 0.2);
+}
+
+.form-check-input:checked {
+  background-color: var(--csg-guinda);
+  border-color: var(--csg-guinda);
+}
+
+.form-check-input:focus {
+  border-color: var(--csg-guinda);
+  box-shadow: 0 0 0 0.25rem rgba(155, 34, 71, 0.2);
+}
+
 .input-foco-verde:focus {
   border-color: #1e5b4f !important;
   box-shadow: 0 0 0 3px rgba(30, 91, 79, 0.25) !important;
   outline: none !important;
+}
+
+/* ---------- Tablas ---------- */
+
+.table {
+  --bs-table-hover-bg: rgba(30, 91, 79, 0.06);
+  --bs-table-bg: transparent;
+  margin-bottom: 0;
+
+  thead th {
+    color: var(--csg-green-900);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 2px solid var(--csg-gold);
+    white-space: nowrap;
+  }
+}
+
+.table-sortable {
+  .sort-th {
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      color: var(--csg-guinda);
+    }
+  }
+}
+
+/* ---------- Modales ---------- */
+
+.modal-content {
+  border: 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 1rem 2.5rem rgba(0, 47, 42, 0.25);
+}
+
+.modal-header {
+  border-bottom: 3px solid var(--csg-gold);
+  background: #fff;
+}
+
+.modal-title {
+  font-family: 'Patria', Georgia, serif;
+  color: var(--csg-green-900);
+}
+
+.modal-footer {
+  background: #fafbfa;
+}
+
+/* ---------- Otros componentes de Bootstrap ---------- */
+
+.breadcrumb {
+  --bs-breadcrumb-divider-color: var(--csg-gold);
+  --bs-breadcrumb-item-active-color: var(--csg-green-900);
+
+  a {
+    color: var(--csg-green);
+
+    &:hover {
+      color: var(--csg-guinda);
+    }
+  }
+}
+
+.badge.text-bg-dark {
+  background-color: var(--csg-green-900) !important;
+}
+
+.badge.text-bg-success {
+  background-color: var(--csg-green) !important;
+}
+
+.badge.text-bg-danger {
+  background-color: var(--csg-guinda) !important;
+}
+
+.progress-bar {
+  background-color: var(--csg-guinda);
+}
+
+.spinner-border {
+  color: var(--csg-guinda);
+}
+
+.btn-primary .spinner-border {
+  color: #fff;
+}
+
+/* ---------- Barra superior ---------- */
+
+.app-navbar {
+  background: var(--csg-green-900);
+  border-bottom: 4px solid var(--csg-gold);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+
+  .navbar-brand {
+    font-family: 'Patria', Georgia, serif;
+    font-weight: 700;
+    color: #fff;
+    font-size: 1.25rem;
+    margin: 0;
+  }
+
+  .nav-link-app {
+    color: var(--csg-gold-light);
+    text-decoration: none;
+    font-size: 0.9rem;
+
+    &:hover {
+      color: #fff;
+    }
+  }
+
+  .user-name {
+    color: var(--csg-gold-light);
+    font-size: 0.85rem;
+  }
+
+  .btn-outline-light {
+    --bs-btn-border-color: rgba(255, 255, 255, 0.45);
+    --bs-btn-hover-bg: var(--csg-guinda);
+    --bs-btn-hover-border-color: var(--csg-guinda);
+    --bs-btn-active-bg: var(--csg-guinda);
+    --bs-btn-active-border-color: var(--csg-guinda);
+  }
+}
+
+/* ---------- Encabezado de página ---------- */
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/* ---------- Estados vacíos ---------- */
+
+.empty-state {
+  text-align: center;
+  color: var(--csg-muted);
+  padding: 3rem 1rem;
+
+  .empty-icon {
+    font-size: 3rem;
+    color: var(--csg-gold);
+    display: block;
+    margin-bottom: 0.5rem;
+  }
 }

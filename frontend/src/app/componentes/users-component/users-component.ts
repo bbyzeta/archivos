@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -62,6 +62,11 @@ export class UsersComponent {
 
   closeModal(): void {
     if (!this.saving()) this.modal.set(null);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.modal()) this.closeModal();
   }
 
   invalid(form: 'create' | 'reset', control: string): boolean {

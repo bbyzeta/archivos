@@ -1,16 +1,21 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Folder } from '../../models/folder.model';
+import { ExplorerPreferencesService } from '../../services/explorer-preferences.service';
 import { FolderService } from '../../services/folder.service';
+import { sortByKey } from '../../utils/file-explorer';
+import { DEFAULT_FOLDER_COLOR } from '../../utils/folder-colors';
 import { AlertaService } from '../alerts/alert-component';
+import { ColorPickerComponent } from '../color-picker-component/color-picker-component';
+import { ExplorerToolbarComponent } from '../explorer-toolbar-component/explorer-toolbar-component';
 import { NavbarComponent } from '../navbar-component/navbar-component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, NavbarComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, NavbarComponent, ColorPickerComponent, ExplorerToolbarComponent],
   templateUrl: './home-component.html',
   styleUrl: './home-component.scss'
 })
@@ -18,16 +23,25 @@ export class HomeComponent {
   private readonly fb = inject(FormBuilder);
   private readonly folderService = inject(FolderService);
   private readonly alertService = inject(AlertaService);
+  protected readonly prefs = inject(ExplorerPreferencesService);
 
   readonly folders = signal<Folder[]>([]);
   readonly loading = signal(true);
   readonly search = signal('');
+  readonly defaultColor = DEFAULT_FOLDER_COLOR;
 
-  /** Carpetas que coinciden con el buscador (sin distinguir mayúsculas ni acentos). */
+  /** Carpetas que coinciden con el buscador (sin distinguir mayúsculas ni acentos), ya ordenadas. */
   readonly filteredFolders = computed(() => {
     const term = this.normalize(this.search());
-    if (!term) return this.folders();
-    return this.folders().filter((f) => this.normalize(f.name).includes(term));
+    const matches = term ? this.folders().filter((f) => this.normalize(f.name).includes(term)) : this.folders();
+    return sortByKey(matches, this.prefs.homeSort(), (f) => f.name, (f) => f.createdAt);
+  });
+
+  readonly summary = computed(() => {
+    const total = this.folders().length;
+    const shown = this.filteredFolders().length;
+    const noun = total === 1 ? 'carpeta' : 'carpetas';
+    return this.search().trim() ? `${shown} de ${total} ${noun}` : `${total} ${noun}`;
   });
 
   // Modal compartido: crear (renaming = null) o renombrar (renaming = carpeta)
@@ -61,6 +75,11 @@ export class HomeComponent {
 
   closeModal(): void {
     if (!this.saving()) this.modalOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.modalOpen()) this.closeModal();
   }
 
   submitFolder(): void {
@@ -99,6 +118,13 @@ export class HomeComponent {
         this.saving.set(false);
         this.alertService.mostrarAlertaError('No se pudo crear la carpeta. Intenta de nuevo.');
       }
+    });
+  }
+
+  setColor(folder: Folder, color: string | null): void {
+    this.folderService.setColor(folder.id, color).subscribe({
+      next: (updated) => this.folders.update((list) => list.map((f) => (f.id === updated.id ? updated : f))),
+      error: () => this.alertService.mostrarAlertaError('No se pudo cambiar el color de la carpeta.')
     });
   }
 

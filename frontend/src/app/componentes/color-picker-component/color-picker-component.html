@@ -1,0 +1,19 @@
+<button type="button" class="btn btn-outline-secondary btn-sm" title="Color de la carpeta" aria-label="Color de la carpeta"
+        aria-haspopup="true" [attr.aria-expanded]="open()" (click)="toggle($event)">
+  <i class="bi bi-palette"></i>
+</button>
+
+@if (open()) {
+  <div class="color-panel shadow" role="menu" [style.top.px]="position().top" [style.left.px]="position().left">
+    <div class="swatches">
+      @for (color of colors; track color.value) {
+        <button type="button" class="swatch" role="menuitem" [title]="color.name" [attr.aria-label]="color.name"
+                [class.selected]="current() === color.value" [style.background-color]="color.value"
+                (click)="select(color.value)"></button>
+      }
+    </div>
+    <button type="button" class="btn btn-link btn-sm p-0 mt-2" role="menuitem" (click)="select(null)">
+      <i class="bi bi-x-circle me-1"></i>Sin color
+    </button>
+  </div>
+}

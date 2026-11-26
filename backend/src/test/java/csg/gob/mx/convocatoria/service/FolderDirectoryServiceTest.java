@@ -261,4 +261,60 @@ class FolderDirectoryServiceTest {
         assertThat(service.rename(folder.getId(), "Docs", "Docs")).isEqualTo("Docs");
         assertThat(folderDir.resolve("Docs/a.txt")).exists();
     }
+
+    // ---------- color ----------
+
+    @Test
+    void asignarColorAUnaSubcarpetaRegistradaActualizaSuRegistro() throws IOException {
+        FolderDirectoryEntity vacia = addDir("Vacia");
+        when(directoryRepository.save(any(FolderDirectoryEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = service.setColor(folder.getId(), "Vacia", "#1E5B4F");
+
+        assertThat(response.color()).isEqualTo("#1e5b4f");
+        assertThat(vacia.getColor()).isEqualTo("#1e5b4f");
+    }
+
+    @Test
+    void asignarColorAUnaSubcarpetaQueSoloExistePorSusArchivosCreaElRegistro() throws IOException {
+        addFile("Docs/2026", "a.txt");
+        when(directoryRepository.save(any(FolderDirectoryEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var response = service.setColor(folder.getId(), "Docs", "#a57f2c");
+
+        ArgumentCaptor<FolderDirectoryEntity> saved = ArgumentCaptor.forClass(FolderDirectoryEntity.class);
+        verify(directoryRepository).save(saved.capture());
+        assertThat(saved.getValue().getPath()).isEqualTo("Docs");
+        assertThat(response.color()).isEqualTo("#a57f2c");
+    }
+
+    @Test
+    void asignarColorAUnaRutaInexistenteDevuelve404YRechazaTraversal() {
+        assertThatThrownBy(() -> service.setColor(folder.getId(), "NoExiste", "#a57f2c"))
+                .satisfies(t -> assertStatus(t, HttpStatus.NOT_FOUND));
+        assertThatThrownBy(() -> service.setColor(folder.getId(), "../x", "#a57f2c"))
+                .satisfies(t -> assertStatus(t, HttpStatus.BAD_REQUEST));
+        verify(directoryRepository, never()).save(any());
+    }
+
+    @Test
+    void quitarElColorConNullLoDejaSinColor() throws IOException {
+        FolderDirectoryEntity d = addDir("Vacia");
+        d.setColor("#9b2247");
+        when(directoryRepository.save(any(FolderDirectoryEntity.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        assertThat(service.setColor(folder.getId(), "Vacia", null).color()).isNull();
+    }
+
+    @Test
+    void renombrarConservaElColorDeLaSubcarpeta() throws IOException {
+        addFile("Docs", "a.txt");
+        FolderDirectoryEntity d = addDir("Docs/Sub");
+        d.setColor("#9b2247");
+
+        service.rename(folder.getId(), "Docs", "Informes");
+
+        assertThat(d.getPath()).isEqualTo("Informes/Sub");
+        assertThat(d.getColor()).isEqualTo("#9b2247");
+    }
 }

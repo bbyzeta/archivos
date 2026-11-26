@@ -218,7 +218,7 @@ class SecurityAccessTest {
     @Test
     void laVistaPublicaNoRequiereAutenticacion() throws Exception {
         when(folderFileService.getPublicFolder("abc123"))
-                .thenReturn(new PublicFolderResponse("Docs", "abc123", List.of(), List.of()));
+                .thenReturn(new PublicFolderResponse("Docs", "abc123", null, List.of(), List.of()));
 
         mvc.perform(get("/api/public/abc123")).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Docs"));
     }
@@ -289,5 +289,41 @@ class SecurityAccessTest {
         mvc.perform(delete("/api/admin/folders/" + UUID.randomUUID())).andExpect(status().isUnauthorized());
         mvc.perform(delete("/api/admin/folders/" + UUID.randomUUID()).header("Authorization", bearer("ana")))
                 .andExpect(status().isNoContent());
+    }
+
+    // ---------- color ----------
+
+    @Test
+    void elColorSeValidaYCualquierUsuarioAutenticadoPuedeAsignarlo() throws Exception {
+        UUID id = UUID.randomUUID();
+        String auth = bearer("ana");
+
+        mvc.perform(patch("/api/admin/folders/" + id + "/color").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"color\":\"#9b2247\"}")).andExpect(status().isOk());
+        mvc.perform(patch("/api/admin/folders/" + id + "/color").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"color\":null}")).andExpect(status().isOk());
+        for (String invalid : new String[] { "rojo", "#fff", "#ggggg0", "red;background:url(x)", "#9b2247ff" }) {
+            mvc.perform(patch("/api/admin/folders/" + id + "/color").header("Authorization", auth)
+                    .contentType(MediaType.APPLICATION_JSON).content("{\"color\":\"" + invalid + "\"}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(patch("/api/admin/folders/" + id + "/color").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"color\":\"#9b2247\"}")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void elColorDeSubcarpetaExigeRutaYColorValido() throws Exception {
+        UUID id = UUID.randomUUID();
+        String auth = bearer("ana");
+
+        mvc.perform(put("/api/admin/folders/" + id + "/directories/color").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"path\":\"Docs\",\"color\":\"#9b2247\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(put("/api/admin/folders/" + id + "/directories/color").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"path\":\"\",\"color\":\"#9b2247\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/admin/folders/" + id + "/directories/color").header("Authorization", auth)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"path\":\"Docs\",\"color\":\"azul\"}"))
+                .andExpect(status().isBadRequest());
     }
 }

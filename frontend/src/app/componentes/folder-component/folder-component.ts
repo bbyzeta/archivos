@@ -1,17 +1,21 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, HostListener, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, forkJoin, from, map, mergeMap, tap } from 'rxjs';
-import { Folder, FolderFile } from '../../models/folder.model';
+import { Folder, FolderDirectory, FolderFile } from '../../models/folder.model';
+import { ExplorerPreferencesService } from '../../services/explorer-preferences.service';
 import { FolderService } from '../../services/folder.service';
 import { AlertaService } from '../alerts/alert-component';
 import { BreadcrumbComponent } from '../breadcrumb-component/breadcrumb-component';
+import { ColorPickerComponent } from '../color-picker-component/color-picker-component';
+import { ExplorerToolbarComponent } from '../explorer-toolbar-component/explorer-toolbar-component';
+import { ExplorerViewComponent } from '../explorer-view-component/explorer-view-component';
 import { NavbarComponent } from '../navbar-component/navbar-component';
-import { FolderEntry, isSameOrInside, joinPath, listDirectory, replacePathPrefix } from '../../utils/file-explorer';
-import { copyToClipboard, fileIcon, fileType, formatSize, publicPageUrl } from '../../utils/file-format';
+import { FolderEntry, isSameOrInside, joinPath, listDirectory, replacePathPrefix, sortListing } from '../../utils/file-explorer';
+import { copyToClipboard, publicPageUrl } from '../../utils/file-format';
+import { DEFAULT_FOLDER_COLOR } from '../../utils/folder-colors';
 
 /** Subidas simultáneas máximas. */
 const MAX_CONCURRENT_UPLOADS = 3;
@@ -40,7 +44,8 @@ interface UploadItem {
 @Component({
   selector: 'app-folder',
   standalone: true,
-  imports: [DatePipe, ReactiveFormsModule, RouterLink, NavbarComponent, BreadcrumbComponent],
+  imports: [ReactiveFormsModule, RouterLink, NavbarComponent, BreadcrumbComponent, ColorPickerComponent,
+    ExplorerToolbarComponent, ExplorerViewComponent],
   templateUrl: './folder-component.html',
   styleUrl: './folder-component.scss'
 })
@@ -49,6 +54,7 @@ export class FolderComponent {
   private readonly alertService = inject(AlertaService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  protected readonly prefs = inject(ExplorerPreferencesService);
   private readonly folderId = this.route.snapshot.paramMap.get('id') ?? '';
 
   /** Subcarpeta que se está viendo (query param `path`); vacío = raíz. Permite deep links y botón Atrás. */
@@ -67,8 +73,18 @@ export class FolderComponent {
   readonly copiedKey = signal<string | null>(null);
 
   /** Subcarpetas registradas explícitamente (incluye las vacías). */
-  readonly directories = signal<string[]>([]);
-  readonly listing = computed(() => listDirectory(this.files(), this.currentPath(), this.directories()));
+  readonly directories = signal<FolderDirectory[]>([]);
+  readonly listing = computed(() => sortListing(
+    listDirectory(this.files(), this.currentPath(), this.directories()), this.prefs.folderSort()));
+
+  readonly summary = computed(() => {
+    const { folders, files } = this.listing();
+    return `${folders.length} ${folders.length === 1 ? 'carpeta' : 'carpetas'} · ${files.length} ${files.length === 1 ? 'archivo' : 'archivos'}`;
+  });
+
+  /** Archivos seleccionados (selección múltiple para eliminar). */
+  readonly selected = signal<ReadonlySet<string>>(new Set());
+  readonly defaultFolderColor = DEFAULT_FOLDER_COLOR;
 
   readonly newFolderOpen = signal(false);
   readonly creatingFolder = signal(false);
@@ -210,7 +226,7 @@ export class FolderComponent {
 
     this.folderService.deleteDirectory(this.folderId, entry.path, true).subscribe({
       next: () => {
-        this.directories.update((list) => list.filter((d) => !isSameOrInside(d, entry.path)));
+        this.directories.update((list) => list.filter((d) => !isSameOrInside(d.path, entry.path)));
         this.files.update((list) => list.filter((f) => !isSameOrInside(f.relativePath, entry.path)));
       },
       error: () => this.alertService.mostrarAlertaError('No se pudo eliminar la carpeta.')
@@ -220,7 +236,7 @@ export class FolderComponent {
   /** Refleja en pantalla el renombrado: actualiza las rutas de archivos y subcarpetas afectadas. */
   private applyRename(oldPath: string, newPath: string): void {
     const rename = (p: string) => (isSameOrInside(p, oldPath) ? replacePathPrefix(p, oldPath, newPath) : p);
-    this.directories.update((list) => list.map(rename));
+    this.directories.update((list) => list.map((d) => ({ ...d, path: rename(d.path) })));
     this.files.update((list) => list.map((f) => {
       if (!isSameOrInside(f.relativePath, oldPath)) return f;
       const relativePath = rename(f.relativePath);
@@ -239,7 +255,7 @@ export class FolderComponent {
   }
 
   private addDirectory(path: string): void {
-    this.directories.update((list) => (list.includes(path) ? list : [...list, path]));
+    this.directories.update((list) => (list.some((d) => d.path === path) ? list : [...list, { path, color: null }]));
   }
 
   /** Registra en el servidor las carpetas vacías detectadas al soltar, para que no se pierdan. */
@@ -267,6 +283,7 @@ export class FolderComponent {
 
   /** Navega a una subcarpeta ('' = raíz) conservando la vista en la URL. */
   openFolder(path: string): void {
+    this.clearSelection();
     this.router.navigate([], { relativeTo: this.route, queryParams: { path: path || null } });
   }
 
@@ -297,10 +314,78 @@ export class FolderComponent {
 
   // ---------- presentación (utilidades compartidas) ----------
 
-  readonly formatSize = formatSize;
-  readonly fileType = fileType;
-  readonly fileIcon = fileIcon;
   readonly publicPageUrl = publicPageUrl;
+
+  // ---------- selección múltiple ----------
+
+  toggleSelect(id: string): void {
+    this.selected.update((current) => {
+      const next = new Set(current);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
+  }
+
+  /** Selecciona (o deselecciona) todos los archivos del nivel actual. */
+  toggleSelectAll(): void {
+    const ids = this.listing().files.map((f) => f.id);
+    const allSelected = ids.length > 0 && ids.every((id) => this.selected().has(id));
+    this.selected.set(allSelected ? new Set() : new Set(ids));
+  }
+
+  clearSelection(): void {
+    if (this.selected().size > 0) this.selected.set(new Set());
+  }
+
+  async deleteSelected(): Promise<void> {
+    const targets = this.files().filter((f) => this.selected().has(f.id));
+    if (targets.length === 0) return;
+
+    const confirmed = await this.alertService.confirmarAccion(
+      '¿Eliminar archivos?',
+      `Se eliminarán ${targets.length} ${targets.length === 1 ? 'archivo' : 'archivos'} de forma permanente.`,
+      'Sí, eliminar');
+    if (!confirmed) return;
+
+    const deleted = new Set<string>();
+    from(targets).pipe(
+      mergeMap((file) => this.folderService.deleteFile(this.folderId, file.id).pipe(
+        tap(() => deleted.add(file.id)),
+        catchError(() => EMPTY)
+      ), MAX_CONCURRENT_UPLOADS)
+    ).subscribe({
+      complete: () => {
+        this.files.update((list) => list.filter((f) => !deleted.has(f.id)));
+        this.selected.set(new Set());
+        if (deleted.size < targets.length) {
+          this.alertService.mostrarAlertaError(`No se pudieron eliminar ${targets.length - deleted.size} archivo(s).`);
+        }
+      }
+    });
+  }
+
+  // ---------- color ----------
+
+  setRootColor(color: string | null): void {
+    this.folderService.setColor(this.folderId, color).subscribe({
+      next: (updated) => this.folder.set(updated),
+      error: () => this.alertService.mostrarAlertaError('No se pudo cambiar el color de la carpeta.')
+    });
+  }
+
+  setSubfolderColor(entry: FolderEntry, color: string | null): void {
+    this.folderService.setDirectoryColor(this.folderId, entry.path, color).subscribe({
+      next: (saved) => this.directories.update((list) => list.some((d) => d.path === saved.path)
+        ? list.map((d) => (d.path === saved.path ? saved : d))
+        : [...list, saved]),
+      error: () => this.alertService.mostrarAlertaError('No se pudo cambiar el color de la carpeta.')
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.newFolderOpen()) this.closeNewFolder();
+  }
 
   // ---------- internos ----------
 

@@ -1,0 +1,40 @@
+:host {
+  display: inline-block;
+}
+
+.color-panel {
+  position: fixed;
+  z-index: 1080;
+  width: 200px;
+  padding: 0.75rem;
+  background: #fff;
+  border: 1px solid var(--csg-border);
+  border-top: 3px solid var(--csg-gold);
+  border-radius: 0.4rem;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--csg-border);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    box-shadow: 0 0 0 2px var(--csg-green);
+    outline: none;
+  }
+
+  &.selected {
+    box-shadow: 0 0 0 2px var(--csg-guinda);
+  }
+}

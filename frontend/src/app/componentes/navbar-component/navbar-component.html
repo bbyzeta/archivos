@@ -1,20 +1,20 @@
-<nav class="navbar bg-light border-bottom px-3">
+<header class="app-navbar">
   <div class="d-flex align-items-center gap-3">
-    <a class="navbar-brand mb-0 h1" routerLink="/home">Gestor de Archivos</a>
+    <a class="navbar-brand" routerLink="/home">Gestor de Archivos</a>
     @if (auth.isAdmin()) {
-      <a class="small text-decoration-none" routerLink="/users"><i class="bi bi-people me-1"></i>Usuarios</a>
+      <a class="nav-link-app" routerLink="/users"><i class="bi bi-people me-1"></i>Usuarios</a>
     }
   </div>
   <div class="d-flex align-items-center gap-2">
-    <span class="text-muted small me-1">{{ auth.currentUser()?.fullName }}</span>
-    <button type="button" class="btn btn-outline-secondary btn-sm" title="Cambiar mi contraseña" (click)="openPasswordModal()">
+    <span class="user-name me-1">{{ auth.currentUser()?.fullName }}</span>
+    <button type="button" class="btn btn-outline-light btn-sm" title="Cambiar mi contraseña" aria-label="Cambiar mi contraseña" (click)="openPasswordModal()">
       <i class="bi bi-key"></i>
     </button>
-    <button type="button" class="btn btn-outline-secondary btn-sm" (click)="auth.logout()">
+    <button type="button" class="btn btn-outline-light btn-sm" (click)="auth.logout()">
       <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión
     </button>
   </div>
-</nav>
+</header>
 
 @if (passwordModalOpen()) {
   <div class="modal-backdrop fade show"></div>

@@ -8,6 +8,8 @@ export interface Folder {
   publicSlug: string;
   publicUrl: string;
   createdAt: string;
+  /** Color hexadecimal #RRGGBB para identificar la carpeta; null = color por defecto. */
+  color: string | null;
 }
 
 export interface FolderFile {
@@ -20,10 +22,16 @@ export interface FolderFile {
   publicUrl: string;
 }
 
+/** Subcarpeta registrada explícitamente (carpetas vacías o con color). */
+export interface FolderDirectory {
+  path: string;
+  color: string | null;
+}
+
 export interface PublicFolder {
   name: string;
   publicSlug: string;
+  color: string | null;
   files: FolderFile[];
-  /** Subcarpetas registradas explícitamente (incluye las vacías). */
-  directories: string[];
+  directories: FolderDirectory[];
 }

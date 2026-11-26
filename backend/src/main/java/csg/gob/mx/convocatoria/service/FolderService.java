@@ -98,6 +98,15 @@ public class FolderService {
         return toResponse(folderRepository.save(folder));
     }
 
+    /** Asigna o quita (null) el color de la carpeta. */
+    @Transactional
+    public FolderResponse setColor(UUID id, String color) {
+        FolderEntity folder = folderRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carpeta no encontrada."));
+        folder.setColor(color == null ? null : color.toLowerCase());
+        return toResponse(folderRepository.save(folder));
+    }
+
     /** Elimina la carpeta: registros en BD (archivos y subcarpetas por cascada) y su directorio en disco. */
     @Transactional
     public void delete(UUID id) {
@@ -140,7 +149,7 @@ public class FolderService {
 
     private FolderResponse toResponse(FolderEntity folder) {
         return new FolderResponse(folder.getId(), folder.getName(), folder.getPublicSlug(),
-                baseUrl + "/api/public/" + folder.getPublicSlug(), folder.getCreatedAt());
+                baseUrl + "/api/public/" + folder.getPublicSlug(), folder.getCreatedAt(), folder.getColor());
     }
 
     private String generateSlug() {

@@ -1,0 +1,31 @@
+<div class="toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+  <span class="text-muted small">{{ summary() }}</span>
+
+  <div class="d-flex flex-wrap align-items-center gap-2">
+    <div class="d-flex align-items-center gap-1">
+      <label for="sortKey" class="visually-hidden">Ordenar por</label>
+      <select id="sortKey" class="form-select form-select-sm sort-select" [value]="sort().key" (change)="onKeyChange($event)">
+        @for (key of keys(); track key) {
+          <option [value]="key" [selected]="sort().key === key">{{ labels[key] }}</option>
+        }
+      </select>
+      <button type="button" class="btn btn-outline-secondary btn-sm"
+              [title]="sort().dir === 'asc' ? 'Ascendente (clic para descendente)' : 'Descendente (clic para ascendente)'"
+              [attr.aria-label]="sort().dir === 'asc' ? 'Orden ascendente' : 'Orden descendente'"
+              (click)="toggleDirection()">
+        <i class="bi" [class.bi-sort-down-alt]="sort().dir === 'asc'" [class.bi-sort-up]="sort().dir === 'desc'"></i>
+      </button>
+    </div>
+
+    <div class="btn-group btn-group-sm" role="group" aria-label="Tipo de vista">
+      <button type="button" class="btn btn-outline-secondary" title="Vista de cuadrícula" aria-label="Vista de cuadrícula"
+              [class.active]="view() === 'grid'" [attr.aria-pressed]="view() === 'grid'" (click)="viewChange.emit('grid')">
+        <i class="bi bi-grid-3x3-gap"></i>
+      </button>
+      <button type="button" class="btn btn-outline-secondary" title="Vista de lista" aria-label="Vista de lista"
+              [class.active]="view() === 'list'" [attr.aria-pressed]="view() === 'list'" (click)="viewChange.emit('list')">
+        <i class="bi bi-list-ul"></i>
+      </button>
+    </div>
+  </div>
+</div>

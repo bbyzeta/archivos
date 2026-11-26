@@ -1,20 +1,23 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { FolderFile, PublicFolder } from '../../models/folder.model';
+import { ExplorerPreferencesService } from '../../services/explorer-preferences.service';
 import { PublicFolderService } from '../../services/public-folder.service';
-import { listDirectory } from '../../utils/file-explorer';
-import { copyToClipboard, fileIcon, fileType, formatSize, isPreviewable } from '../../utils/file-format';
+import { listDirectory, sortListing } from '../../utils/file-explorer';
+import { copyToClipboard } from '../../utils/file-format';
+import { DEFAULT_FOLDER_COLOR } from '../../utils/folder-colors';
 import { BreadcrumbComponent } from '../breadcrumb-component/breadcrumb-component';
+import { ExplorerToolbarComponent } from '../explorer-toolbar-component/explorer-toolbar-component';
+import { ExplorerViewComponent } from '../explorer-view-component/explorer-view-component';
 
 /** Vista pública de una carpeta: se abre desde el link compartido, sin iniciar sesión. */
 @Component({
   selector: 'app-public-folder',
   standalone: true,
-  imports: [DatePipe, BreadcrumbComponent],
+  imports: [BreadcrumbComponent, ExplorerToolbarComponent, ExplorerViewComponent],
   templateUrl: './public-folder-component.html',
   styleUrl: './public-folder-component.scss'
 })
@@ -23,6 +26,7 @@ export class PublicFolderComponent {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly slug = this.route.snapshot.paramMap.get('slug') ?? '';
+  protected readonly prefs = inject(ExplorerPreferencesService);
 
   /** Subcarpeta que se está viendo (query param `path`); vacío = raíz. */
   readonly currentPath = toSignal(
@@ -34,20 +38,27 @@ export class PublicFolderComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly search = signal('');
   readonly copiedId = signal<string | null>(null);
+  readonly rootColor = computed(() => this.folder()?.color ?? DEFAULT_FOLDER_COLOR);
 
-  readonly listing = computed(() => listDirectory(this.folder()?.files ?? [], this.currentPath(), this.folder()?.directories ?? []));
+  readonly listing = computed(() => sortListing(
+    listDirectory(this.folder()?.files ?? [], this.currentPath(), this.folder()?.directories ?? []),
+    this.prefs.folderSort()));
 
   /** Con búsqueda activa se listan los coincidentes de todo el árbol, con su ruta. */
   readonly searchResults = computed(() => {
     const term = this.search().trim().toLowerCase();
     if (!term) return null;
-    return (this.folder()?.files ?? []).filter((f) => `${f.relativePath}/${f.filename}`.toLowerCase().includes(term));
+    const matches = (this.folder()?.files ?? [])
+      .filter((f) => `${f.relativePath}/${f.filename}`.toLowerCase().includes(term));
+    return sortListing({ folders: [], files: matches }, this.prefs.folderSort()).files;
   });
 
-  readonly formatSize = formatSize;
-  readonly fileType = fileType;
-  readonly fileIcon = fileIcon;
-  readonly isPreviewable = isPreviewable;
+  readonly summary = computed(() => {
+    const results = this.searchResults();
+    if (results) return `${results.length} ${results.length === 1 ? 'resultado' : 'resultados'}`;
+    const { folders, files } = this.listing();
+    return `${folders.length} ${folders.length === 1 ? 'carpeta' : 'carpetas'} · ${files.length} ${files.length === 1 ? 'archivo' : 'archivos'}`;
+  });
 
   constructor() {
     this.publicFolderService.get(this.slug).subscribe({

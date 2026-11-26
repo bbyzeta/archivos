@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Folder, FolderFile, FolderRequest } from '../models/folder.model';
+import { Folder, FolderDirectory, FolderFile, FolderRequest } from '../models/folder.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -25,6 +25,16 @@ export class FolderService {
     return this.http.put<Folder>(`${this.url}/${id}`, { name });
   }
 
+  /** Asigna (o quita con null) el color de la carpeta. */
+  setColor(id: string, color: string | null): Observable<Folder> {
+    return this.http.patch<Folder>(`${this.url}/${id}/color`, { color });
+  }
+
+  /** Asigna (o quita con null) el color de una subcarpeta. */
+  setDirectoryColor(folderId: string, path: string, color: string | null): Observable<FolderDirectory> {
+    return this.http.put<FolderDirectory>(`${this.url}/${folderId}/directories/color`, { path, color });
+  }
+
   delete(id: string): Observable<void> {
     return this.http.delete<void>(`${this.url}/${id}`);
   }
@@ -44,8 +54,8 @@ export class FolderService {
     });
   }
 
-  listDirectories(folderId: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.url}/${folderId}/directories`);
+  listDirectories(folderId: string): Observable<FolderDirectory[]> {
+    return this.http.get<FolderDirectory[]>(`${this.url}/${folderId}/directories`);
   }
 
   createDirectory(folderId: string, path: string): Observable<{ path: string }> {

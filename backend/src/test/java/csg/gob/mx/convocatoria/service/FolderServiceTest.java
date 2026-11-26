@@ -218,4 +218,25 @@ class FolderServiceTest {
                 .extracting(e -> ((ResponseStatusException) e).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
     }
+
+    // ---------- color ----------
+
+    @Test
+    void asignaYQuitaElColorDeLaCarpeta() throws IOException {
+        FolderEntity folder = existingFolder(Files.createDirectories(storage.resolve("slug-original")));
+
+        assertThat(service.setColor(folder.getId(), "#9B2247").color()).isEqualTo("#9b2247");
+        assertThat(service.setColor(folder.getId(), null).color()).isNull();
+    }
+
+    @Test
+    void asignarColorAUnaCarpetaInexistenteDevuelve404() {
+        UUID unknown = UUID.randomUUID();
+        when(folderRepository.findById(unknown)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.setColor(unknown, "#9b2247"))
+                .isInstanceOf(ResponseStatusException.class)
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
+    }
 }
