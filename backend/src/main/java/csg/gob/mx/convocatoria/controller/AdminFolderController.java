@@ -22,6 +22,7 @@ import csg.gob.mx.convocatoria.dto.DirectoryRequest;
 import csg.gob.mx.convocatoria.dto.FolderFileResponse;
 import csg.gob.mx.convocatoria.dto.FolderRequest;
 import csg.gob.mx.convocatoria.dto.FolderResponse;
+import csg.gob.mx.convocatoria.dto.RenameDirectoryRequest;
 import csg.gob.mx.convocatoria.service.FolderDirectoryService;
 import csg.gob.mx.convocatoria.service.FolderFileService;
 import csg.gob.mx.convocatoria.service.FolderService;
@@ -92,10 +93,16 @@ public class AdminFolderController {
         return new DirectoryRequest(folderDirectoryService.create(id, request.path()));
     }
 
+    @PutMapping("/{id}/directories")
+    public DirectoryRequest renameDirectory(@PathVariable UUID id, @Valid @RequestBody RenameDirectoryRequest request) {
+        return new DirectoryRequest(folderDirectoryService.rename(id, request.path(), request.name()));
+    }
+
     @DeleteMapping("/{id}/directories")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteDirectory(@PathVariable UUID id, @RequestParam("path") String path) {
-        folderDirectoryService.delete(id, path);
+    public void deleteDirectory(@PathVariable UUID id, @RequestParam("path") String path,
+            @RequestParam(value = "recursive", defaultValue = "false") boolean recursive) {
+        folderDirectoryService.delete(id, path, recursive);
     }
 
     @DeleteMapping("/{id}/files/{fileId}")

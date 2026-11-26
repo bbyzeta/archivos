@@ -114,12 +114,14 @@
                 <td class="text-nowrap">{{ formatSize(sub.sizeBytes) }} · {{ sub.fileCount }} {{ sub.fileCount === 1 ? 'archivo' : 'archivos' }}</td>
                 <td class="text-nowrap">{{ sub.lastUploadedAt ? (sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
                 <td class="text-end text-nowrap">
-                  @if (sub.fileCount === 0) {
-                    <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar carpeta vacía"
-                            (click)="deleteDirectory(sub)">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  }
+                  <button type="button" class="btn btn-outline-secondary btn-sm me-1" title="Renombrar carpeta"
+                          (click)="openRenameDirectory(sub)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar carpeta"
+                          (click)="deleteDirectory(sub)">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </td>
               </tr>
             }
@@ -159,13 +161,13 @@
   <div class="modal-backdrop fade show"></div>
   <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="closeNewFolder()">
     <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
-      <form class="modal-content" [formGroup]="newFolderForm" (ngSubmit)="createFolder()">
+      <form class="modal-content" [formGroup]="newFolderForm" (ngSubmit)="submitFolderForm()">
         <div class="modal-header">
-          <h5 class="modal-title">Nueva carpeta</h5>
+          <h5 class="modal-title">{{ renamingDirectory() ? 'Renombrar carpeta' : 'Nueva carpeta' }}</h5>
           <button type="button" class="btn-close" aria-label="Cerrar" (click)="closeNewFolder()"></button>
         </div>
         <div class="modal-body">
-          @if (currentPath()) {
+          @if (currentPath() && !renamingDirectory()) {
             <p class="text-muted small">Se creará dentro de <strong>{{ currentPath() }}</strong></p>
           }
           <label for="newFolderName" class="form-label">Nombre</label>
@@ -180,7 +182,7 @@
           <button type="button" class="btn btn-outline-secondary" [disabled]="creatingFolder()" (click)="closeNewFolder()">Cancelar</button>
           <button type="submit" class="btn btn-primary" [disabled]="creatingFolder()">
             @if (creatingFolder()) { <span class="spinner-border spinner-border-sm me-2"></span> }
-            Crear
+            {{ renamingDirectory() ? 'Guardar' : 'Crear' }}
           </button>
         </div>
       </form>

@@ -10,7 +10,7 @@ import { FolderService } from '../../services/folder.service';
 import { AlertaService } from '../alerts/alert-component';
 import { BreadcrumbComponent } from '../breadcrumb-component/breadcrumb-component';
 import { NavbarComponent } from '../navbar-component/navbar-component';
-import { FolderEntry, joinPath, listDirectory } from '../../utils/file-explorer';
+import { FolderEntry, isSameOrInside, joinPath, listDirectory, replacePathPrefix } from '../../utils/file-explorer';
 import { copyToClipboard, fileIcon, fileType, formatSize, publicPageUrl } from '../../utils/file-format';
 
 /** Subidas simultáneas máximas. */
@@ -72,6 +72,8 @@ export class FolderComponent {
 
   readonly newFolderOpen = signal(false);
   readonly creatingFolder = signal(false);
+  /** Subcarpeta que se está renombrando; null = el modal crea una nueva. */
+  readonly renamingDirectory = signal<FolderEntry | null>(null);
   private readonly fb = inject(FormBuilder);
   readonly newFolderForm = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100), Validators.pattern(NEW_FOLDER_NAME_PATTERN)]]
@@ -138,7 +140,14 @@ export class FolderComponent {
   // ---------- subcarpetas ----------
 
   openNewFolder(): void {
+    this.renamingDirectory.set(null);
     this.newFolderForm.reset();
+    this.newFolderOpen.set(true);
+  }
+
+  openRenameDirectory(entry: FolderEntry): void {
+    this.renamingDirectory.set(entry);
+    this.newFolderForm.reset({ name: entry.name });
     this.newFolderOpen.set(true);
   }
 
@@ -151,14 +160,34 @@ export class FolderComponent {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  createFolder(): void {
+  /** Crea una subcarpeta o, si hay una en edición, la renombra (mismo modal). */
+  submitFolderForm(): void {
     const name = this.newFolderForm.controls.name.value.trim();
     if (this.newFolderForm.invalid || !name) {
       this.newFolderForm.markAllAsTouched();
       return;
     }
 
+    const target = this.renamingDirectory();
     this.creatingFolder.set(true);
+
+    if (target) {
+      this.folderService.renameDirectory(this.folderId, target.path, name).subscribe({
+        next: ({ path: newPath }) => {
+          this.applyRename(target.path, newPath);
+          this.creatingFolder.set(false);
+          this.newFolderOpen.set(false);
+        },
+        error: (err: HttpErrorResponse) => {
+          this.creatingFolder.set(false);
+          this.alertService.mostrarAlertaError(err.status === 409
+            ? 'Ya existe una carpeta con ese nombre.'
+            : 'No se pudo renombrar la carpeta. Intenta de nuevo.');
+        }
+      });
+      return;
+    }
+
     this.folderService.createDirectory(this.folderId, joinPath(this.currentPath(), name)).subscribe({
       next: ({ path }) => {
         this.addDirectory(path);
@@ -173,15 +202,40 @@ export class FolderComponent {
   }
 
   async deleteDirectory(entry: FolderEntry): Promise<void> {
-    const confirmed = await this.alertService.confirmarAccion(
-      '¿Eliminar carpeta?', `Se eliminará la carpeta vacía "${entry.name}".`, 'Sí, eliminar');
+    const message = entry.fileCount === 0
+      ? `Se eliminará la carpeta vacía "${entry.name}".`
+      : `Se eliminará "${entry.name}" con sus ${entry.fileCount} ${entry.fileCount === 1 ? 'archivo' : 'archivos'} y subcarpetas. Esta acción no se puede deshacer.`;
+    const confirmed = await this.alertService.confirmarAccion('¿Eliminar carpeta?', message, 'Sí, eliminar');
     if (!confirmed) return;
 
-    this.folderService.deleteDirectory(this.folderId, entry.path).subscribe({
-      next: () => this.directories.update((list) =>
-        list.filter((d) => d !== entry.path && !d.startsWith(`${entry.path}/`))),
+    this.folderService.deleteDirectory(this.folderId, entry.path, true).subscribe({
+      next: () => {
+        this.directories.update((list) => list.filter((d) => !isSameOrInside(d, entry.path)));
+        this.files.update((list) => list.filter((f) => !isSameOrInside(f.relativePath, entry.path)));
+      },
       error: () => this.alertService.mostrarAlertaError('No se pudo eliminar la carpeta.')
     });
+  }
+
+  /** Refleja en pantalla el renombrado: actualiza las rutas de archivos y subcarpetas afectadas. */
+  private applyRename(oldPath: string, newPath: string): void {
+    const rename = (p: string) => (isSameOrInside(p, oldPath) ? replacePathPrefix(p, oldPath, newPath) : p);
+    this.directories.update((list) => list.map(rename));
+    this.files.update((list) => list.map((f) => {
+      if (!isSameOrInside(f.relativePath, oldPath)) return f;
+      const relativePath = rename(f.relativePath);
+      return { ...f, relativePath, publicUrl: this.rebuildPublicUrl(f, oldPath, relativePath) };
+    }));
+  }
+
+  /** Los links directos incluyen la ruta: se reconstruyen con la nueva ruta (segmentos codificados). */
+  private rebuildPublicUrl(file: FolderFile, oldPath: string, newRelativePath: string): string {
+    const marker = '/file/';
+    const cut = file.publicUrl.indexOf(marker);
+    if (cut < 0) return file.publicUrl;
+    const base = file.publicUrl.substring(0, cut + marker.length);
+    const segments = [...newRelativePath.split('/').filter(Boolean), file.filename];
+    return base + segments.map(encodeURIComponent).join('/');
   }
 
   private addDirectory(path: string): void {

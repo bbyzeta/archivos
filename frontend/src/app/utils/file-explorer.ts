@@ -80,3 +80,13 @@ export function joinPath(base: string, child: string): string {
   if (!base) return child;
   return child ? `${base}/${child}` : base;
 }
+
+/** ¿`path` es `base` o está dentro de ella? */
+export function isSameOrInside(path: string, base: string): boolean {
+  return path === base || path.startsWith(`${base}/`);
+}
+
+/** Cambia el prefijo `oldBase` por `newBase` en `path` (que debe ser igual a oldBase o estar dentro). */
+export function replacePathPrefix(path: string, oldBase: string, newBase: string): string {
+  return newBase + path.substring(oldBase.length);
+}

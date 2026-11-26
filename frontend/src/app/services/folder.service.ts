@@ -52,8 +52,13 @@ export class FolderService {
     return this.http.post<{ path: string }>(`${this.url}/${folderId}/directories`, { path });
   }
 
-  deleteDirectory(folderId: string, path: string): Observable<void> {
-    return this.http.delete<void>(`${this.url}/${folderId}/directories`, { params: { path } });
+  renameDirectory(folderId: string, path: string, name: string): Observable<{ path: string }> {
+    return this.http.put<{ path: string }>(`${this.url}/${folderId}/directories`, { path, name });
+  }
+
+  /** `recursive` elimina también los archivos y subcarpetas que contenga. */
+  deleteDirectory(folderId: string, path: string, recursive = false): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${folderId}/directories`, { params: { path, recursive } });
   }
 
   deleteFile(folderId: string, fileId: string): Observable<void> {
