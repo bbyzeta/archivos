@@ -17,5 +17,9 @@ public interface FolderFileRepository extends JpaRepository<FolderFileEntity, UU
 
     Optional<FolderFileEntity> findByFolderIdAndRelativePathAndFilename(UUID folderId, String relativePath, String filename);
 
+    boolean existsByFolderIdAndRelativePath(UUID folderId, String relativePath);
+
+    boolean existsByFolderIdAndRelativePathStartingWith(UUID folderId, String prefix);
+
     boolean existsByFolderIdAndRelativePathAndFilename(UUID folderId, String relativePath, String filename);
 }

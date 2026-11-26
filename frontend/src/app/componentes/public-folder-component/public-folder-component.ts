@@ -35,7 +35,7 @@ export class PublicFolderComponent {
   readonly search = signal('');
   readonly copiedId = signal<string | null>(null);
 
-  readonly listing = computed(() => listDirectory(this.folder()?.files ?? [], this.currentPath()));
+  readonly listing = computed(() => listDirectory(this.folder()?.files ?? [], this.currentPath(), this.folder()?.directories ?? []));
 
   /** Con búsqueda activa se listan los coincidentes de todo el árbol, con su ruta. */
   readonly searchResults = computed(() => {

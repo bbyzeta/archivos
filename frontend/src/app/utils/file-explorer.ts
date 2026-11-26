@@ -23,7 +23,7 @@ export interface Crumb {
 }
 
 /** Contenido directo de `currentPath`: sus subcarpetas y los archivos que están justo en ese nivel. */
-export function listDirectory(allFiles: FolderFile[], currentPath: string): DirectoryListing {
+export function listDirectory(allFiles: FolderFile[], currentPath: string, directories: string[] = []): DirectoryListing {
   const prefix = currentPath ? `${currentPath}/` : '';
   const folders = new Map<string, FolderEntry>();
   const files: FolderFile[] = [];
@@ -47,6 +47,15 @@ export function listDirectory(allFiles: FolderFile[], currentPath: string): Dire
     entry.sizeBytes += file.sizeBytes;
     if (file.uploadedAt > entry.lastUploadedAt) entry.lastUploadedAt = file.uploadedAt;
     folders.set(name, entry);
+  }
+
+  // Subcarpetas registradas explícitamente (pueden estar vacías)
+  for (const dir of directories) {
+    if (dir === currentPath || !dir.startsWith(prefix)) continue;
+    const name = dir.substring(prefix.length).split('/')[0];
+    if (!folders.has(name)) {
+      folders.set(name, { name, path: prefix + name, fileCount: 0, sizeBytes: 0, lastUploadedAt: '' });
+    }
   }
 
   const byName = (a: string, b: string) => a.localeCompare(b, 'es', { sensitivity: 'base', numeric: true });

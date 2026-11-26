@@ -28,7 +28,7 @@
       }
     </div>
 
-    @if (currentFolder.files.length === 0) {
+    @if (currentFolder.files.length === 0 && currentFolder.directories.length === 0) {
       <div class="text-center text-muted py-5">
         <i class="bi bi-files display-4 d-block mb-2"></i>
         Esta carpeta aún no tiene archivos.
@@ -102,7 +102,7 @@
                   </td>
                   <td>Carpeta</td>
                   <td class="text-nowrap">{{ formatSize(sub.sizeBytes) }} · {{ sub.fileCount }} {{ sub.fileCount === 1 ? 'archivo' : 'archivos' }}</td>
-                  <td class="text-nowrap">{{ sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="text-nowrap">{{ sub.lastUploadedAt ? (sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
                   <td></td>
                 </tr>
               }

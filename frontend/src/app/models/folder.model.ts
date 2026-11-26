@@ -24,4 +24,6 @@ export interface PublicFolder {
   name: string;
   publicSlug: string;
   files: FolderFile[];
+  /** Subcarpetas registradas explícitamente (incluye las vacías). */
+  directories: string[];
 }

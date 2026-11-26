@@ -8,7 +8,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -34,8 +33,7 @@ import csg.gob.mx.convocatoria.repository.FolderRepository;
 public class FolderFileService {
 
     /** Caracteres no válidos en nombres de archivo (Windows/Linux) y de control. */
-    private static final Pattern INVALID_NAME_CHARS = Pattern.compile("[<>:\"|?*\\x00-\\x1f]");
-    private static final int MAX_RELATIVE_PATH = 300;
+    private static final Pattern INVALID_NAME_CHARS = PathSanitizer.INVALID_NAME_CHARS;
     private static final int MAX_FILENAME = 255;
 
     /** Archivo público listo para enviar. */
@@ -43,12 +41,15 @@ public class FolderFileService {
 
     private final FolderRepository folderRepository;
     private final FolderFileRepository fileRepository;
+    private final FolderDirectoryService directoryService;
     private final String baseUrl;
 
     public FolderFileService(FolderRepository folderRepository, FolderFileRepository fileRepository,
+            FolderDirectoryService directoryService,
             @Value("${app.base-url}") String baseUrl) {
         this.folderRepository = folderRepository;
         this.fileRepository = fileRepository;
+        this.directoryService = directoryService;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
     }
 
@@ -63,8 +64,8 @@ public class FolderFileService {
     @Transactional
     public FolderFileResponse upload(UUID folderId, MultipartFile file, String rawRelativePath) {
         FolderEntity folder = getFolder(folderId);
-        if (file == null || file.isEmpty()) {
-            throw badRequest("El archivo está vacío.");
+        if (file == null) {
+            throw badRequest("No se recibió ningún archivo.");
         }
 
         String filename = sanitizeFilename(file.getOriginalFilename());
@@ -133,7 +134,8 @@ public class FolderFileService {
         List<FolderFileResponse> files = fileRepository.findByFolderIdOrderByUploadedAtDesc(folder.getId()).stream()
                 .map(f -> toResponse(folder, f))
                 .toList();
-        return new PublicFolderResponse(folder.getName(), folder.getPublicSlug(), files);
+        return new PublicFolderResponse(folder.getName(), folder.getPublicSlug(), files,
+                directoryService.paths(folder.getId()));
     }
 
     /** Busca el archivo por su ruta completa dentro de la carpeta pública (solo archivos registrados en BD). */
@@ -191,19 +193,7 @@ public class FolderFileService {
 
     /** Devuelve la ruta relativa normalizada con '/', o "" para la raíz de la carpeta. */
     private String sanitizeRelativePath(String raw) {
-        if (raw == null || raw.isBlank()) return "";
-        List<String> segments = new ArrayList<>();
-        for (String segment : raw.replace('\\', '/').split("/")) {
-            String s = segment.trim();
-            if (s.isEmpty() || s.equals(".")) continue;
-            if (s.equals("..") || INVALID_NAME_CHARS.matcher(s).find()) {
-                throw badRequest("Ruta relativa no permitida.");
-            }
-            segments.add(s);
-        }
-        String joined = String.join("/", segments);
-        if (joined.length() > MAX_RELATIVE_PATH) throw badRequest("La ruta relativa es demasiado larga.");
-        return joined;
+        return PathSanitizer.relativePath(raw);
     }
 
     private String resolveMimeType(MultipartFile file, Path target) {

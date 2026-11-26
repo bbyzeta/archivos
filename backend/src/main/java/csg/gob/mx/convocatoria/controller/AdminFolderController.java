@@ -17,9 +17,11 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import csg.gob.mx.convocatoria.dto.DirectoryRequest;
 import csg.gob.mx.convocatoria.dto.FolderFileResponse;
 import csg.gob.mx.convocatoria.dto.FolderRequest;
 import csg.gob.mx.convocatoria.dto.FolderResponse;
+import csg.gob.mx.convocatoria.service.FolderDirectoryService;
 import csg.gob.mx.convocatoria.service.FolderFileService;
 import csg.gob.mx.convocatoria.service.FolderService;
 import jakarta.validation.Valid;
@@ -30,10 +32,13 @@ public class AdminFolderController {
 
     private final FolderService folderService;
     private final FolderFileService folderFileService;
+    private final FolderDirectoryService folderDirectoryService;
 
-    public AdminFolderController(FolderService folderService, FolderFileService folderFileService) {
+    public AdminFolderController(FolderService folderService, FolderFileService folderFileService,
+            FolderDirectoryService folderDirectoryService) {
         this.folderService = folderService;
         this.folderFileService = folderFileService;
+        this.folderDirectoryService = folderDirectoryService;
     }
 
     @GetMapping
@@ -62,6 +67,23 @@ public class AdminFolderController {
     public FolderFileResponse upload(@PathVariable UUID id, @RequestParam("file") MultipartFile file,
             @RequestParam(value = "relativePath", required = false) String relativePath) {
         return folderFileService.upload(id, file, relativePath);
+    }
+
+    @GetMapping("/{id}/directories")
+    public List<String> listDirectories(@PathVariable UUID id) {
+        return folderDirectoryService.list(id);
+    }
+
+    @PostMapping("/{id}/directories")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DirectoryRequest createDirectory(@PathVariable UUID id, @Valid @RequestBody DirectoryRequest request) {
+        return new DirectoryRequest(folderDirectoryService.create(id, request.path()));
+    }
+
+    @DeleteMapping("/{id}/directories")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteDirectory(@PathVariable UUID id, @RequestParam("path") String path) {
+        folderDirectoryService.delete(id, path);
     }
 
     @DeleteMapping("/{id}/files/{fileId}")

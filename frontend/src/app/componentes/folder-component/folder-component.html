@@ -24,7 +24,12 @@
       </button>
     </div>
 
-    <app-breadcrumb [path]="currentPath()" [rootLabel]="currentFolder.name" (navigate)="openFolder($event)" />
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+      <app-breadcrumb [path]="currentPath()" [rootLabel]="currentFolder.name" (navigate)="openFolder($event)" />
+      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="openNewFolder()">
+        <i class="bi bi-folder-plus me-1"></i>Nueva carpeta
+      </button>
+    </div>
 
     <!-- Zona de subida -->
     <div class="drop-zone text-center rounded p-4 mb-3" [class.dragging]="dragging()"
@@ -107,8 +112,15 @@
                 </td>
                 <td>Carpeta</td>
                 <td class="text-nowrap">{{ formatSize(sub.sizeBytes) }} · {{ sub.fileCount }} {{ sub.fileCount === 1 ? 'archivo' : 'archivos' }}</td>
-                <td class="text-nowrap">{{ sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm' }}</td>
-                <td></td>
+                <td class="text-nowrap">{{ sub.lastUploadedAt ? (sub.lastUploadedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}</td>
+                <td class="text-end text-nowrap">
+                  @if (sub.fileCount === 0) {
+                    <button type="button" class="btn btn-outline-danger btn-sm" title="Eliminar carpeta vacía"
+                            (click)="deleteDirectory(sub)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  }
+                </td>
               </tr>
             }
             @for (file of listing().files; track file.id) {
@@ -142,3 +154,36 @@
     }
   }
 </main>
+
+@if (newFolderOpen()) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog" aria-modal="true" (click)="closeNewFolder()">
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+      <form class="modal-content" [formGroup]="newFolderForm" (ngSubmit)="createFolder()">
+        <div class="modal-header">
+          <h5 class="modal-title">Nueva carpeta</h5>
+          <button type="button" class="btn-close" aria-label="Cerrar" (click)="closeNewFolder()"></button>
+        </div>
+        <div class="modal-body">
+          @if (currentPath()) {
+            <p class="text-muted small">Se creará dentro de <strong>{{ currentPath() }}</strong></p>
+          }
+          <label for="newFolderName" class="form-label">Nombre</label>
+          <input id="newFolderName" type="text" class="form-control" maxlength="100" autofocus
+                 formControlName="name" [class.is-invalid]="esNombreCarpetaInvalido()"
+                 placeholder="Ej. Contratos">
+          @if (esNombreCarpetaInvalido()) {
+            <div class="invalid-feedback">Nombre obligatorio, sin / \ : * ? " &lt; &gt; |</div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="creatingFolder()" (click)="closeNewFolder()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="creatingFolder()">
+            @if (creatingFolder()) { <span class="spinner-border spinner-border-sm me-2"></span> }
+            Crear
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

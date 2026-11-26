@@ -36,6 +36,18 @@ export class FolderService {
     });
   }
 
+  listDirectories(folderId: string): Observable<string[]> {
+    return this.http.get<string[]>(`${this.url}/${folderId}/directories`);
+  }
+
+  createDirectory(folderId: string, path: string): Observable<{ path: string }> {
+    return this.http.post<{ path: string }>(`${this.url}/${folderId}/directories`, { path });
+  }
+
+  deleteDirectory(folderId: string, path: string): Observable<void> {
+    return this.http.delete<void>(`${this.url}/${folderId}/directories`, { params: { path } });
+  }
+
   deleteFile(folderId: string, fileId: string): Observable<void> {
     return this.http.delete<void>(`${this.url}/${folderId}/files/${fileId}`);
   }

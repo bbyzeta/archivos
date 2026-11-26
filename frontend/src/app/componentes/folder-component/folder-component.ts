@@ -1,19 +1,23 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { EMPTY, Subject, catchError, map, mergeMap, tap } from 'rxjs';
+import { EMPTY, Subject, catchError, forkJoin, from, map, mergeMap, tap } from 'rxjs';
 import { Folder, FolderFile } from '../../models/folder.model';
 import { FolderService } from '../../services/folder.service';
 import { AlertaService } from '../alerts/alert-component';
 import { BreadcrumbComponent } from '../breadcrumb-component/breadcrumb-component';
 import { NavbarComponent } from '../navbar-component/navbar-component';
-import { joinPath, listDirectory } from '../../utils/file-explorer';
+import { FolderEntry, joinPath, listDirectory } from '../../utils/file-explorer';
 import { copyToClipboard, fileIcon, fileType, formatSize, publicPageUrl } from '../../utils/file-format';
 
 /** Subidas simultáneas máximas. */
 const MAX_CONCURRENT_UPLOADS = 3;
+
+/** Nombre de carpeta válido: sin "." / "..", separadores ni caracteres no permitidos en disco. */
+const NEW_FOLDER_NAME_PATTERN = /^(?!\.{1,2}$)[^\\/:*?"<>|\u0000-\u001f]+$/;
 
 /** Máximo de archivos por lote (evita saturar la cola y la interfaz con carpetas enormes). */
 const MAX_FILES_PER_BATCH = 1000;
@@ -36,7 +40,7 @@ interface UploadItem {
 @Component({
   selector: 'app-folder',
   standalone: true,
-  imports: [DatePipe, RouterLink, NavbarComponent, BreadcrumbComponent],
+  imports: [DatePipe, ReactiveFormsModule, RouterLink, NavbarComponent, BreadcrumbComponent],
   templateUrl: './folder-component.html',
   styleUrl: './folder-component.scss'
 })
@@ -62,7 +66,16 @@ export class FolderComponent {
   readonly uploads = signal<UploadItem[]>([]);
   readonly copiedKey = signal<string | null>(null);
 
-  readonly listing = computed(() => listDirectory(this.files(), this.currentPath()));
+  /** Subcarpetas registradas explícitamente (incluye las vacías). */
+  readonly directories = signal<string[]>([]);
+  readonly listing = computed(() => listDirectory(this.files(), this.currentPath(), this.directories()));
+
+  readonly newFolderOpen = signal(false);
+  readonly creatingFolder = signal(false);
+  private readonly fb = inject(FormBuilder);
+  readonly newFolderForm = this.fb.nonNullable.group({
+    name: ['', [Validators.required, Validators.maxLength(100), Validators.pattern(NEW_FOLDER_NAME_PATTERN)]]
+  });
 
   constructor() {
     // Una sola cola: garantiza máximo 3 subidas en paralelo aunque se agreguen lotes nuevos
@@ -110,14 +123,92 @@ export class FolderComponent {
       .map((item) => ({ entry: item.webkitGetAsEntry?.() ?? null, file: item.getAsFile() }));
 
     const found: PendingFile[] = [];
+    const emptyDirs: string[] = [];
     for (const { entry, file } of dropped) {
       if (entry) {
-        await this.collectEntry(entry, '', found);
+        await this.collectEntry(entry, '', found, emptyDirs);
       } else if (file) {
         found.push({ file, relativePath: '' });
       }
     }
     this.enqueue(found);
+    this.createEmptyDirectories(emptyDirs);
+  }
+
+  // ---------- subcarpetas ----------
+
+  openNewFolder(): void {
+    this.newFolderForm.reset();
+    this.newFolderOpen.set(true);
+  }
+
+  closeNewFolder(): void {
+    if (!this.creatingFolder()) this.newFolderOpen.set(false);
+  }
+
+  esNombreCarpetaInvalido(): boolean {
+    const control = this.newFolderForm.controls.name;
+    return control.invalid && (control.dirty || control.touched);
+  }
+
+  createFolder(): void {
+    const name = this.newFolderForm.controls.name.value.trim();
+    if (this.newFolderForm.invalid || !name) {
+      this.newFolderForm.markAllAsTouched();
+      return;
+    }
+
+    this.creatingFolder.set(true);
+    this.folderService.createDirectory(this.folderId, joinPath(this.currentPath(), name)).subscribe({
+      next: ({ path }) => {
+        this.addDirectory(path);
+        this.creatingFolder.set(false);
+        this.newFolderOpen.set(false);
+      },
+      error: () => {
+        this.creatingFolder.set(false);
+        this.alertService.mostrarAlertaError('No se pudo crear la carpeta. Intenta de nuevo.');
+      }
+    });
+  }
+
+  async deleteDirectory(entry: FolderEntry): Promise<void> {
+    const confirmed = await this.alertService.confirmarAccion(
+      '¿Eliminar carpeta?', `Se eliminará la carpeta vacía "${entry.name}".`, 'Sí, eliminar');
+    if (!confirmed) return;
+
+    this.folderService.deleteDirectory(this.folderId, entry.path).subscribe({
+      next: () => this.directories.update((list) =>
+        list.filter((d) => d !== entry.path && !d.startsWith(`${entry.path}/`))),
+      error: () => this.alertService.mostrarAlertaError('No se pudo eliminar la carpeta.')
+    });
+  }
+
+  private addDirectory(path: string): void {
+    this.directories.update((list) => (list.includes(path) ? list : [...list, path]));
+  }
+
+  /** Registra en el servidor las carpetas vacías detectadas al soltar, para que no se pierdan. */
+  private createEmptyDirectories(paths: string[]): void {
+    if (paths.length === 0) return;
+    const base = this.currentPath();
+    let failed = 0;
+
+    from(paths).pipe(
+      mergeMap((path) => this.folderService.createDirectory(this.folderId, joinPath(base, path)).pipe(
+        catchError(() => {
+          failed++;
+          return EMPTY;
+        })
+      ), MAX_CONCURRENT_UPLOADS)
+    ).subscribe({
+      next: ({ path }) => this.addDirectory(path),
+      complete: () => {
+        if (failed > 0) {
+          this.alertService.mostrarAlertaError(`No se pudieron crear ${failed} carpeta(s) vacía(s).`);
+        }
+      }
+    });
   }
 
   /** Navega a una subcarpeta ('' = raíz) conservando la vista en la URL. */
@@ -160,7 +251,8 @@ export class FolderComponent {
   // ---------- internos ----------
 
   /** Recorre recursivamente un archivo o directorio soltado y acumula sus archivos con su ruta relativa. */
-  private async collectEntry(entry: FileSystemEntry, parentPath: string, out: PendingFile[]): Promise<void> {
+  private async collectEntry(entry: FileSystemEntry, parentPath: string, out: PendingFile[],
+      emptyDirs: string[]): Promise<void> {
     if (out.length > MAX_FILES_PER_BATCH) return;
 
     if (entry.isFile) {
@@ -175,12 +267,17 @@ export class FolderComponent {
       const reader = (entry as FileSystemDirectoryEntry).createReader();
       // readEntries devuelve el contenido por lotes: hay que repetir hasta recibir una lista vacía
       let batch: FileSystemEntry[];
+      let children = 0;
       do {
         batch = await new Promise<FileSystemEntry[]>((resolve) => reader.readEntries(resolve, () => resolve([])));
+        children += batch.length;
         for (const child of batch) {
-          await this.collectEntry(child, path, out);
+          await this.collectEntry(child, path, out, emptyDirs);
         }
       } while (batch.length > 0);
+
+      // Una carpeta sin contenido no genera archivos: se registra aparte para conservarla
+      if (children === 0) emptyDirs.push(path);
     }
   }
 
@@ -245,9 +342,13 @@ export class FolderComponent {
     this.folderService.get(this.folderId).subscribe({
       next: (folder) => {
         this.folder.set(folder);
-        this.folderService.listFiles(this.folderId).subscribe({
-          next: (files) => {
+        forkJoin({
+          files: this.folderService.listFiles(this.folderId),
+          directories: this.folderService.listDirectories(this.folderId)
+        }).subscribe({
+          next: ({ files, directories }) => {
             this.files.set(files);
+            this.directories.set(directories);
             this.loading.set(false);
           },
           error: () => this.failLoading()
